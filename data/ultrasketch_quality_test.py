@@ -6,6 +6,7 @@ from datasets import load_dataset
 from diffusers import DiffusionPipeline
 import torch
 import os
+import sys
 
 # Load SketchFig — we want the rendered figures as input
 ds = load_dataset("nllg/sketchfig", split="train")
@@ -20,6 +21,8 @@ pipe = DiffusionPipeline.from_pretrained(
     trust_remote_code=True,
     torch_dtype=torch.float16,
 )
+
+pipe.to("cuda:0")
 
 # Test on first 5 examples
 for i in range(5):
@@ -43,5 +46,7 @@ for i in range(5):
     synthetic_sketch.save(f"ultrasketch_outputs/{i}_3_synthetic_sketch.png")
 
     print(f"Example {i} done")
+    sys.stdout.flush()
 
 print("All done — check ultrasketch_outputs/")
+sys.stdout.flush()
