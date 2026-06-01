@@ -19,7 +19,6 @@ pipe = DiffusionPipeline.from_pretrained(
     custom_pipeline="nllg/ultrasketch",
     trust_remote_code=True,
     torch_dtype=torch.float16,
-    device_map="balanced"
 )
 
 # Test on first 5 examples
