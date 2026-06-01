@@ -10,7 +10,6 @@ TikzCodeGenerator is a sketch-to-TikZ research repository for model benchmarking
 - `data` — datasets, references, and related assets.
 
 ## Evaluation metrics
-This project uses shared metrics from `/evaluation`
 Key metrics include:
 - CrystalBLEU (cBLEU)
 - Token Edit Distance (TED)
