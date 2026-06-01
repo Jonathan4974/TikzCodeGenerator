@@ -7,7 +7,6 @@ preprocessing scripts, and synthetic data generation pipelines.
 - Dataset audit markdown files (e.g. `sketchfig_audit.md`)
 - Preprocessing and cleaning scripts
 - Synthetic sketch generation scripts (e.g. `ultrasketch_test.py`)
-- Research notes on datasets and similarity metrics
 
 ## What does NOT go here
 - Raw dataset files — these are loaded via HuggingFace Hub or 
