@@ -7,17 +7,6 @@ from utils.compute_ssim import compute_image_ssim
 
 
 def get_assert(output: str, context):
-    """
-    Promptfoo Python assertion.
-
-    Erwartet in test.vars:
-      - input_image: Pfad zum Referenz-PNG im Container
-      - similarity_threshold: optional, default 0.75
-
-    output:
-      - TikZ/LaTeX-Code, der direkt gerendert werden kann
-    """
-
     vars_ = context.get("vars", {})
 
     input_image = vars_.get("input_image")

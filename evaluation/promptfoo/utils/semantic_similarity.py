@@ -27,9 +27,6 @@ def load_model(model_key: str):
 
 
 def extract_tensor_features(model_output) -> torch.Tensor:
-    """
-    Extrahiert aus verschiedenen Transformers-Outputs einen Tensor.
-    """
 
     if torch.is_tensor(model_output):
         return model_output

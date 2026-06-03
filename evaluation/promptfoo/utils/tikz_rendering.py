@@ -209,17 +209,6 @@ def render_tex_to_png(
     png_padding: int = 4,
     png_tolerance: int = 10,
 ) -> Path:
-    """
-    Rendert LaTeX/TikZ-Code zu PNG.
-
-    Wenn extract_tikz=True:
-      - extrahiert nur den ersten tikzpicture-Block
-      - baut ein standalone-Dokument
-      - vermeidet A4-Seite, Seitenzahlen und große Weißräume
-
-    Wenn extract_tikz=False:
-      - rendert tex_code direkt als vollständiges LaTeX-Dokument
-    """
 
     if extract_tikz:
         tex_code = build_standalone_tikz_document(

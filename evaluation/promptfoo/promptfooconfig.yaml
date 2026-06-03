@@ -27,7 +27,7 @@ providers:
 
 defaultTest:
   vars:
-    timeout: 60
+    timeout: 6
     crystalbleu_k: 500
     lpips_net_type: alex
     
@@ -38,6 +38,7 @@ defaultTest:
     siglip_threshold: 0.60
     lpips_threshold: 0.30
     dists_threshold: 0.25
+    relative_length_threshold: 0.25
 
   assert:
     - type: python
@@ -71,6 +72,10 @@ defaultTest:
     - type: python
       value: file://assertions/image_dists.py
       metric: dists_distance
+    
+    - type: python
+      value: file://assertions/tikz_relative_length_output_reference.py
+      metric: relative_length_error
 
 tests:
   - vars:

@@ -42,7 +42,6 @@ def get_assert(output: str, context):
                 image_b=generated_image,
             )
 
-            # Debug-Dateien dauerhaft speichern
             test_id = reference_image.stem
             debug_generated = debug_dir / f"{test_id}_generated.png"
             debug_reference = debug_dir / f"{test_id}_reference.png"

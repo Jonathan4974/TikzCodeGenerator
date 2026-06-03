@@ -57,15 +57,6 @@ def compute_lpips_distance(
     size: tuple[int, int] = (512, 512),
     net_type: str = "alex",
 ) -> float:
-    """
-    LPIPS distance.
-
-    Niedriger ist besser.
-    0.0 bedeutet sehr ähnlich.
-
-    normalize=True bedeutet:
-    Input-Bilder dürfen im Bereich [0, 1] liegen.
-    """
 
     metric = get_lpips_metric(
         net_type=net_type,
