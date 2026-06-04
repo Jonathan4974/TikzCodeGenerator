@@ -5,9 +5,30 @@ prompts:
 
 providers:
   - id: http
-    label: detikzify-api
+    label: detikzify-2-5-8b
     config:
       url: http://host.docker.internal:8000/detikzify
+      method: POST
+      multipart:
+        parts:
+          - kind: file
+            name: image
+            filename: input.png
+            contentType: image/png
+            source:
+              type: path
+              path: "file://{{input_image}}"
+
+          - kind: field
+            name: timeout
+            value: "{{timeout}}"
+
+      transformResponse: json.tikz
+  
+  - id: http
+    label: detikzify-2-8b
+    config:
+      url: http://host.docker.internal:8001/detikzify
       method: POST
       multipart:
         parts:
@@ -27,7 +48,7 @@ providers:
 
 defaultTest:
   vars:
-    timeout: 6
+    timeout: 60
     crystalbleu_k: 500
     lpips_net_type: alex
     
