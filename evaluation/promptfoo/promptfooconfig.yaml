@@ -48,18 +48,24 @@ providers:
 
 defaultTest:
   vars:
+    debug: true
+
     timeout: 60
     crystalbleu_k: 500
+    crystalbleu_n: 1
     lpips_net_type: alex
+    crystalbleu_use_cache: true
     
     similarity_threshold: 0.75
     crystalbleu_threshold: 0.1
-    ted_threshold: 500
+    crystalbleu_threshold_scitikzer: 0.1
+    ted_threshold: 0.50
+    ted_threshold_scitikzer: 0.5
     clip_threshold: 0.60
     siglip_threshold: 0.60
-    lpips_threshold: 0.30
-    dists_threshold: 0.25
-    relative_length_threshold: 0.25
+    lpips_similarity_threshold: 0.80
+    dists_similarity_threshold: 0.80
+    relative_length_similarity_threshold: 0.80
 
   assert:
     - type: python
@@ -73,10 +79,18 @@ defaultTest:
     - type: python
       value: file://assertions/tikz_crystalbleu.py
       metric: crystalbleu
+    
+    - type: python
+      value: file://assertions/tikz_crystalbleu_from_scitikzer.py
+      metric: crystalbleu_scitikzer
 
     - type: python
       value: file://assertions/tikz_ted.py
       metric: ted_similarity
+
+    - type: python
+      value: file://assertions/tikz_ted_from_scitikzer.py
+      metric: ted_similarity_scitikzer
 
     - type: python
       value: file://assertions/image_clip_similarity.py

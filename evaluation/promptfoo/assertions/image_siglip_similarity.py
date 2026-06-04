@@ -32,10 +32,7 @@ def get_assert(output: str, context):
         with tempfile.TemporaryDirectory() as tmp_dir:
             generated_image = Path(tmp_dir) / "generated.png"
 
-            render_tex_to_png(
-                tex_code=output,
-                output_path=generated_image,
-            )
+            render_tex_to_png(tex_code=output, output_path=generated_image)
 
             score = image_cosine_similarity(
                 image_a=input_image,
@@ -46,10 +43,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"SigLIP similarity={score:.4f}, threshold={threshold:.4f}",
-            "namedScores": {
-                "siglip_similarity": score,
-            },
+            "reason": f"SigLIP similarity={score:.4f}, threshold={threshold:.4f}"
         }
 
     except Exception as e:

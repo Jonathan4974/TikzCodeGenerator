@@ -32,10 +32,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"Image SSIM={score:.4f}, threshold={threshold:.4f}",
-            "namedScores": {
-                "image_ssim": score,
-            },
+            "reason": f"Image SSIM={score:.4f}, threshold={threshold:.4f}"
         }
 
     except Exception as e:

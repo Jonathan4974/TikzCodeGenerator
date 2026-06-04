@@ -56,10 +56,7 @@ def get_assert(output: str, context):
             "reason": (
                 f"CrystalBLEU={score:.4f}, threshold={threshold:.4f}, "
                 f"reference={reference_path.name}, k={k}"
-            ),
-            "namedScores": {
-                "crystalbleu": score,
-            },
+            )
         }
 
     except Exception as e:

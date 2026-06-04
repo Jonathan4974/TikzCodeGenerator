@@ -46,10 +46,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"CLIP similarity={score:.4f}, threshold={threshold:.4f}",
-            "namedScores": {
-                "clip_similarity": score,
-            },
+            "reason": f"CLIP similarity={score:.4f}, threshold={threshold:.4f}"
         }
 
     except Exception as e:

@@ -58,3 +58,21 @@ def compute_dists_distance(
         distance = metric(img_a, img_b)
 
     return float(distance.item())
+
+
+def dists_distance_to_similarity(distance: float) -> float:
+    return 1.0 / (1.0 + distance)
+
+
+def compute_dists_similarity(
+    image_a: str | Path,
+    image_b: str | Path,
+    size: tuple[int, int] = (512, 512),
+) -> float:
+    distance = compute_dists_distance(
+        image_a=image_a,
+        image_b=image_b,
+        size=size,
+    )
+
+    return dists_distance_to_similarity(distance)

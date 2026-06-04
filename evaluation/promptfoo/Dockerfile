@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-fonts-recommended \
     texlive-science \
     texlive-extra-utils \
+    texlive-luatex \
+    texlive-xetex \
     latexmk \
     dvisvgm \
     ghostscript \
@@ -35,6 +37,8 @@ RUN pip3 install --break-system-packages \
     crystalbleu \
     latexcodec \
     torchmetrics \
+    pygments \
+    sacremoses \
     torch \
     torchvision \
     transformers \
