@@ -1,65 +1,45 @@
-description: image to tikz code using specialized models
+description: image to tikz code using chatgpt
 
 prompts:
-  - "{{input_image}}"
+  - |
+    [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Convert this image into complete LaTeX/TikZ code. Return only the full LaTeX document. Do not use markdown fences. Do not add explanations."
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "{{input_image_base64}}"
+            }
+          }
+        ]
+      }
+    ]
 
 providers:
-  - id: http
-    label: detikzify-2-5-8b
+  - id: openai:chat:gpt-5.5
+    label: chatgpt-gpt-5.5
     config:
-      url: http://host.docker.internal:8000/detikzify
-      method: POST
-      multipart:
-        parts:
-          - kind: file
-            name: image
-            filename: input.png
-            contentType: image/png
-            source:
-              type: path
-              path: "file://{{input_image}}"
-
-          - kind: field
-            name: timeout
-            value: "{{timeout}}"
-
-      transformResponse: json.tikz
-  
-  - id: http
-    label: detikzify-2-8b
-    config:
-      url: http://host.docker.internal:8001/detikzify
-      method: POST
-      multipart:
-        parts:
-          - kind: file
-            name: image
-            filename: input.png
-            contentType: image/png
-            source:
-              type: path
-              path: "file://{{input_image}}"
-
-          - kind: field
-            name: timeout
-            value: "{{timeout}}"
-
-      transformResponse: json.tikz
+      temperature: 0
+      max_tokens: 4096
 
 defaultTest:
   vars:
     debug: true
 
-    timeout: 60
     crystalbleu_k: 500
     crystalbleu_n: 1
     lpips_net_type: alex
     crystalbleu_use_cache: true
-    
+
     similarity_threshold: 0.75
     crystalbleu_threshold: 0.1
     crystalbleu_threshold_scitikzer: 0.1
-    ted_threshold: 0.50
+    ted_similarity_threshold: 0.50
     ted_threshold_scitikzer: 0.5
     clip_threshold: 0.60
     siglip_threshold: 0.60
@@ -114,17 +94,21 @@ defaultTest:
 
 tests:
   - vars:
+      input_image_base64: file:///images/train-00000_row_00000000.png
       input_image: /images/train-00000_row_00000000.png
       reference_text: /references/train-00000_row_00000000.txt
 
   - vars:
+      input_image_base64: file:///images/train-00000_row_00000001.png
       input_image: /images/train-00000_row_00000001.png
       reference_text: /references/train-00000_row_00000001.txt
 
   - vars:
+      input_image_base64: file:///images/train-00000_row_00000002.png
       input_image: /images/train-00000_row_00000002.png
       reference_text: /references/train-00000_row_00000002.txt
 
   - vars:
+      input_image_base64: file:///images/train-00000_row_00000003.png
       input_image: /images/train-00000_row_00000003.png
       reference_text: /references/train-00000_row_00000003.txt
