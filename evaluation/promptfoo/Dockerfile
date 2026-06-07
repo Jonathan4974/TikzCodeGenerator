@@ -42,7 +42,8 @@ RUN pip3 install --break-system-packages \
     torch \
     torchvision \
     transformers \
-    sentencepiece 
+    sentencepiece \
+    dreamsim
 
 
 # Promptfoo installieren

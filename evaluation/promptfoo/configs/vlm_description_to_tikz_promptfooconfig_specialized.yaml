@@ -15,6 +15,18 @@ providers:
         text: "{{vlm_description}}"
       transformResponse: json.tikz
   
+  - id: http
+    label: automatikz
+    config:
+      url: http://host.docker.internal:8003/automatikz
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        text: "{{vlm_description}}"
+      transformResponse: json.tikz
+
+  
 defaultTest:
   vars:
     debug: true
