@@ -118,6 +118,10 @@ defaultTest:
       metric: siglip_similarity
 
     - type: python
+      value: file:///app/assertions/image_siglip_cc.py
+      metric: siglip_cc
+
+    - type: python
       value: file:///app/assertions/image_lpips.py
       metric: lpips_distance
     

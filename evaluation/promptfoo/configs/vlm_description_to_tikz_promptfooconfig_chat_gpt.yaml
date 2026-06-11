@@ -75,12 +75,20 @@ defaultTest:
       metric: siglip_similarity
 
     - type: python
+      value: file:///app/assertions/image_siglip_cc.py
+      metric: siglip_cc
+
+    - type: python
       value: file:///app/assertions/image_lpips.py
       metric: lpips_distance
     
     - type: python
       value: file:///app/assertions/image_dists.py
       metric: dists_distance
+    
+    - type: python
+      value: file:///app/assertions/image_dreamsim.py
+      metric: dreamsim_similarity
     
     - type: python
       value: file:///app/assertions/tikz_relative_length_output_reference.py
