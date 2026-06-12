@@ -32,6 +32,7 @@ RUN pip3 install --break-system-packages \
     pyarrow \
     pillow \
     numpy \
+    scikit-learn \
     scikit-image \
     nltk \
     crystalbleu \

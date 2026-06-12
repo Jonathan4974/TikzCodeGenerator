@@ -46,8 +46,9 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
     config = context.get("config", {})
 
+    threshold = float(config.get("threshold", 0.75))
+
     reference_text = vars_.get("reference_text")
-    threshold = float(config.get("threshold", vars_.get("crystalbleu_threshold_scitikzer", 0.10)))
     k = int(config.get("k", vars_.get("crystalbleu_k", 500)))
     n = int(config.get("n", vars_.get("crystalbleu_n", 4)))
     use_cache = as_bool(config.get("use_cache",vars_.get("crystalbleu_use_cache", True)), default=True)
@@ -83,8 +84,6 @@ def get_assert(output: str, context):
             "score": score,
             "reason": (
                 f"CrystalBLEU Scitikzer ={score:.4f}, "
-                f"threshold={threshold:.4f}, "
-                f"k={k}, n={n}, "
                 f"corpus_size={len(corpus)}"
             )
         }

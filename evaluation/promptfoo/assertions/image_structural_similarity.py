@@ -10,9 +10,10 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
     input_image = vars_.get("input_image")
-    threshold = float(vars_.get("similarity_threshold", 0.75))
-
     input_image = Path(input_image)
+
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -32,7 +33,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"Image SSIM={score:.4f}, threshold={threshold:.4f}"
+            "reason": f"Image SSIM={score:.4f}"
         }
 
     except Exception as e:

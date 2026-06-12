@@ -16,11 +16,10 @@ def length_error_to_similarity(relative_error: float) -> float:
 
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
-    config = context.get("config", {})
-
     reference_text = vars_.get("reference_text")
 
-    threshold = float(config.get("threshold", vars_.get("relative_length_similarity_threshold", 0.80)))
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     if not reference_text:
         return {
@@ -52,7 +51,6 @@ def get_assert(output: str, context):
             "reason": (
                 f"Relative length similarity={similarity:.4f}, "
                 f"relative error={relative_error:.4f}, "
-                f"threshold={threshold:.4f}, "
                 f"output_len={output_len}, "
                 f"reference_len={reference_len}, "
                 f"ratio={ratio:.4f}"

@@ -13,8 +13,8 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
     config = context.get("config", {})
 
+    threshold = float(config.get("threshold", 0.75))
     reference_image = vars_.get("reference_image") or vars_.get("input_image")
-    threshold = float(config.get("threshold", vars_.get("lpips_similarity_threshold", 0.80)))
     net_type = str(config.get("net_type", vars_.get("lpips_net_type", "alex")))
 
     if not reference_image:
@@ -52,7 +52,7 @@ def get_assert(output: str, context):
             "score": similarity,
             "reason": (
                 f"LPIPS similarity={similarity:.4f}, "
-                f"threshold={threshold:.4f}, "
+                f"LPIPS distance={distance:.4f}"
             )
         }
 

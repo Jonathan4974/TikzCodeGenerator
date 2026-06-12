@@ -1,25 +1,21 @@
-description: ChatGPT vlm description to TikZ code
+description: vlm description to tikz code using tikzero-plus-10b
 
 prompts:
-  - |
-    Convert the following visual description into complete LaTeX/TikZ code.
-
-    Requirements:
-    - Return only the full LaTeX document.
-    - Do not use markdown fences.
-    - Do not add explanations.
-    - The LaTeX document must be directly renderable.
-
-    Visual description:
-    {{vlm_description}}
+  - "{{vlm_description}}"
 
 providers:
-  - id: openai:chat:gpt-5.5
-    label: chatgpt-gpt-5.5
+  - id: http
+    label: tikzero-plus-10b
     config:
-      temperature: 0
-      max_tokens: 4096
+      url: http://host.docker.internal:8002/tikzero
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        text: "{{vlm_description}}"
+      transformResponse: json.tikz
 
+  
 defaultTest:
   vars:
     debug: true

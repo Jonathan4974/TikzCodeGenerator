@@ -21,8 +21,10 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
     input_image = vars_.get("input_image")
-    threshold = float(vars_.get("crystalbleu_threshold", 0.1))
     k = int(vars_.get("crystalbleu_k", 500))
+
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     if not input_image:
         return {
@@ -54,8 +56,7 @@ def get_assert(output: str, context):
             "pass": score >= threshold,
             "score": score,
             "reason": (
-                f"CrystalBLEU={score:.4f}, threshold={threshold:.4f}, "
-                f"reference={reference_path.name}, k={k}"
+                f"CrystalBLEU={score:.4f}"
             )
         }
 

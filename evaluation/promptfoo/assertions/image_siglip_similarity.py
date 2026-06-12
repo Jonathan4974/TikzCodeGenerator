@@ -10,7 +10,9 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
     input_image = vars_.get("input_image")
-    threshold = float(vars_.get("siglip_threshold", 0.70))
+
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     if not input_image:
         return {
@@ -43,7 +45,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"SigLIP similarity={score:.4f}, threshold={threshold:.4f}"
+            "reason": f"SigLIP similarity={score:.4f}"
         }
 
     except Exception as e:

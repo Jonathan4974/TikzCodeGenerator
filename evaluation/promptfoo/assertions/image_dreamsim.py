@@ -11,9 +11,10 @@ from utils.dreamsim_similarity import (
 
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
-
     input_image = vars_.get("input_image")
-    threshold = float(vars_.get("dreamsim_threshold", 0.75))
+
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     if not input_image:
         return {
@@ -51,8 +52,7 @@ def get_assert(output: str, context):
             "score": score,
             "reason": (
                 f"DreamSim similarity={score:.4f}, "
-                f"DreamSim distance={distance:.4f}, "
-                f"threshold={threshold:.4f}"
+                f"DreamSim distance={distance:.4f}"
             ),
         }
 

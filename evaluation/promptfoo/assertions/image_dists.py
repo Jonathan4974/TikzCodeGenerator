@@ -27,8 +27,8 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
     config = context.get("config", {})
 
+    threshold = float(config.get("threshold", 0.75))
     reference_image = vars_.get("reference_image") or vars_.get("input_image")
-    threshold = float(config.get("threshold", vars_.get("dists_similarity_threshold", 0.80)))
     debug_enabled = as_bool(config.get("debug", vars_.get("debug", False)))
     debug_dir = Path(config.get("debug_dir",vars_.get("debug_dir", "/app/debug_dists")))
 
@@ -78,8 +78,7 @@ def get_assert(output: str, context):
 
         reason = (
             f"DISTS similarity={similarity:.4f}, "
-            f"DISTS distance={distance:.4f}, "
-            f"threshold={threshold:.4f}."
+            f"DISTS distance={distance:.4f}"
         )
 
         return {

@@ -21,7 +21,9 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
     input_image = vars_.get("input_image")
-    threshold = float(vars_.get("ted_threshold", 500.0))
+
+    config = context.get("config")
+    threshold = float(config.get("threshold", 0.75))
 
     if not input_image:
         return {
@@ -50,15 +52,12 @@ def get_assert(output: str, context):
         ted_similarity = 1.0 / (1.0 + ted)
 
         return {
-            "pass": ted <= threshold,
+            "pass": ted_similarity >= threshold,
             "score": ted_similarity,
             "reason": (
-                f"TED={ted_similarity:.4f}, threshold={threshold:.4f}, "
+                f"TED={ted_similarity:.4f}, "
                 f"reference={reference_path.name}"
-            ),
-            "namedScores": {
-                "ted_similarity": ted_similarity,
-            },
+            )
         }
 
     except Exception as e:
