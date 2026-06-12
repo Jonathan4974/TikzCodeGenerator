@@ -108,6 +108,12 @@ defaultTest:
       config:
         threshold: 0.8
 
+    - type: python
+      value: file:///app/assertions/image_ms_structual_similarity.py
+      metric: ms-ssim
+      config:
+        threshold: 0.75
+
 tests:
   - vars:
       input_image: /images/train-00000_row_00000000.png
