@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+import os
 
 import torch
 from PIL import Image
@@ -11,23 +12,41 @@ MODEL_NAMES = {
     "siglip": "google/siglip-base-patch16-224",
 }
 
+HF_CACHE_DIR = os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface")
 
-@lru_cache(maxsize=2)
+HF_LOCAL_FILES_ONLY = os.getenv("HF_LOCAL_FILES_ONLY", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
+
+@lru_cache(maxsize=None)
 def load_model(model_key: str):
     if model_key not in MODEL_NAMES:
         raise ValueError(f"Unknown model_key: {model_key}")
 
     model_name = MODEL_NAMES[model_key]
 
-    processor = AutoImageProcessor.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
+    processor = AutoImageProcessor.from_pretrained(
+        model_name,
+        cache_dir=HF_CACHE_DIR,
+        local_files_only=HF_LOCAL_FILES_ONLY,
+    )
+
+    model = AutoModel.from_pretrained(
+        model_name,
+        cache_dir=HF_CACHE_DIR,
+        local_files_only=HF_LOCAL_FILES_ONLY,
+    )
+
     model.eval()
 
     return processor, model
 
 
 def extract_tensor_features(model_output) -> torch.Tensor:
-
     if torch.is_tensor(model_output):
         return model_output
 
