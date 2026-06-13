@@ -11,9 +11,9 @@ from utils.dreamsim_similarity import (
 
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
-    input_image = vars_.get("input_image")
+    config = context.get("config", {}) or {}
 
-    config = context.get("config")
+    input_image = vars_.get("input_image")
     threshold = float(config.get("threshold", 0.75))
 
     if not input_image:
@@ -45,6 +45,7 @@ def get_assert(output: str, context):
                 image_a=input_image,
                 image_b=generated_image,
             )
+
             score = dreamsim_distance_to_similarity(distance)
 
         return {

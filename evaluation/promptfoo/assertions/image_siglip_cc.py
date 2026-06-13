@@ -5,13 +5,14 @@ import traceback
 from utils.tikz_rendering import render_tex_to_png
 from utils.siglip_cc_similarity import compute_siglip_cc, siglip_cc_to_score
 
+
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
+    config = context.get("config", {}) or {}
 
     input_image = vars_.get("input_image")
-    config = context.get("config")
     threshold = float(config.get("threshold", 0.75))
-   
+
     if not input_image:
         return {
             "pass": False,
@@ -44,7 +45,7 @@ def get_assert(output: str, context):
         return {
             "pass": score >= threshold,
             "score": score,
-            "reason": f"SigLIP-similarity={score:.4f}, SigLIP-CC={cc:.4f})"
+            "reason": f"SigLIP-similarity={score:.4f}, SigLIP-CC={cc:.4f}",
         }
 
     except Exception as e:
