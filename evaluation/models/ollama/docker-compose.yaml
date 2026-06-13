@@ -1,0 +1,25 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama-data:/root/.ollama
+    gpus: all
+    restart: unless-stopped
+
+  ollama-client:
+    build:
+      context: ./ollama_client
+      dockerfile: Dockerfile
+    container_name: ollama-client
+    ports:
+      - "8004:8004"
+    environment:
+      OLLAMA_URL: http://ollama:11434/api/chat
+    volumes:
+      - /home/jonas/Datasets/TikZ/DaTikZ-V4/images:/images:ro
+    depends_on:
+      - ollama
+    restart: unless-stopped

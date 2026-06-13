@@ -1,31 +1,24 @@
-description: image to tikz code using chatgpt
+description: image to tikz code using gemma4:e2b-it-qat
 
 prompts:
   - |
-    [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "Convert this image into complete LaTeX/TikZ code. Return only the full LaTeX document. Do not use markdown fences. Do not add explanations."
-          },
-          {
-            "type": "image_url",
-            "image_url": {
-              "url": "{{input_image_format_for_vlm}}"
-            }
-          }
-        ]
-      }
-    ]
+    Convert this image into complete LaTeX/TikZ code.
+    Return only the full LaTeX document.
+    Do not use markdown fences.
+    Do not add explanations.
 
 providers:
-  - id: openai:chat:gpt-5.5
-    label: chatgpt-gpt-5.5
+  - id: http://host.docker.internal:8004/generate
+    label: ollama-fastapi
     config:
-      temperature: 0
-      max_tokens: 4096
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        prompt: "{{prompt}}"
+        image: "{{input_image}}"
+        model: "gemma4:e2b-it-qat"
+      responseParser: json.output
 
 defaultTest:
   vars:
@@ -123,21 +116,17 @@ defaultTest:
 
 tests:
   - vars:
-      input_image_format_for_vlm: file:///images/train-00000_row_00000000.png
       input_image: /images/train-00000_row_00000000.png
       reference_text: /references/train-00000_row_00000000.txt
 
   - vars:
-      input_image_format_for_vlm: file:///images/train-00000_row_00000001.png
       input_image: /images/train-00000_row_00000001.png
       reference_text: /references/train-00000_row_00000001.txt
 
   - vars:
-      input_image_format_for_vlm: file:///images/train-00000_row_00000002.png
       input_image: /images/train-00000_row_00000002.png
       reference_text: /references/train-00000_row_00000002.txt
 
   - vars:
-      input_image_format_for_vlm: file:///images/train-00000_row_00000003.png
       input_image: /images/train-00000_row_00000003.png
       reference_text: /references/train-00000_row_00000003.txt
