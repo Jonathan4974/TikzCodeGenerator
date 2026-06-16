@@ -5,9 +5,10 @@ docker run --rm -it \
   --env-file .env \
   -v "$PWD:/app" \
   -v "$PWD/promptfoo-db:/root/.promptfoo" \
-  -v "/home/jonas/Datasets/TikZ/DaTikZ-V4/images:/images" \
-  -v "/home/jonas/Datasets/TikZ/DaTikZ-V4/references:/references" \
-  -v "/home/jonas/Datasets/TikZ/DaTikZ-V4/vlm_descriptions:/vlm_descriptions" \
+  -v "/home/jonas/Datasets/TikZ/benchmark_data/image_manifest.csv:/image_manifest.csv" \
+  -v "/home/jonas/Datasets/TikZ/benchmark_data/images:/images" \
+  -v "/home/jonas/Datasets/TikZ/benchmark_data/references:/references" \
+  -v "/home/jonas/Datasets/TikZ/benchmark_data/captions:/captions" \
   -v promptfoo-hf-cache:/root/.cache/huggingface \
   -v promptfoo-torch-cache:/root/.cache/torch \
   -v promptfoo-dreamsim-cache:/root/.cache/dreamsim \

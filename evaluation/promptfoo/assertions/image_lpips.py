@@ -14,7 +14,7 @@ def get_assert(output: str, context):
     config = context.get("config", {})
 
     threshold = float(config.get("threshold", 0.75))
-    reference_image = vars_.get("reference_image") or vars_.get("input_image")
+    reference_image = vars_.get("reference_image")
     net_type = str(config.get("net_type", vars_.get("lpips_net_type", "alex")))
 
     if not reference_image:

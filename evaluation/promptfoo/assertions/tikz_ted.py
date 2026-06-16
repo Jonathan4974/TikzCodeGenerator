@@ -7,8 +7,8 @@ from utils.tex_edit_distance import compute_ted
 REFERENCE_DIR = Path("/references")
 
 
-def reference_path_from_input_image(input_image: str) -> Path:
-    image_name = Path(input_image).name
+def reference_path_from_reference_image(reference_image: str) -> Path:
+    image_name = Path(reference_image).name
 
     if not image_name.endswith(".png"):
         raise ValueError(f"Expected PNG input image, got: {image_name}")
@@ -20,20 +20,20 @@ def reference_path_from_input_image(input_image: str) -> Path:
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
-    input_image = vars_.get("input_image")
+    reference_image = vars_.get("reference_image")
 
     config = context.get("config")
     threshold = float(config.get("threshold", 0.75))
 
-    if not input_image:
+    if not reference_image:
         return {
             "pass": False,
             "score": 0.0,
-            "reason": f"Missing vars.input_image. Available vars: {list(vars_.keys())}",
+            "reason": f"Missing vars.reference_image. Available vars: {list(vars_.keys())}",
         }
 
     try:
-        reference_path = reference_path_from_input_image(input_image)
+        reference_path = reference_path_from_reference_image(reference_image)
 
         if not reference_path.exists():
             return {

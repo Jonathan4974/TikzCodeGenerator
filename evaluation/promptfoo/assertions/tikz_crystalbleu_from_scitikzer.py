@@ -48,22 +48,22 @@ def get_assert(output: str, context):
 
     threshold = float(config.get("threshold", 0.75))
 
-    reference_text = vars_.get("reference_text")
+    reference_code = vars_.get("reference_code")
     k = int(config.get("k", vars_.get("crystalbleu_k", 500)))
     n = int(config.get("n", vars_.get("crystalbleu_n", 4)))
     use_cache = as_bool(config.get("use_cache",vars_.get("crystalbleu_use_cache", True)), default=True)
     cache_dir = config.get("cache_dir", vars_.get("crystalbleu_cache_dir", "/app/.cache/crystalbleu_latex"))
     corpus_dir = config.get("corpus_dir", vars_.get("crystalbleu_corpus_dir", "/references"))
 
-    if not reference_text:
+    if not reference_code:
         return {
             "pass": False,
             "score": 0.0,
-            "reason": "Missing vars.reference_text",
+            "reason": "Missing vars.reference_code",
         }
 
     try:
-        reference = read_text_value(reference_text)
+        reference = read_text_value(reference_code)
 
         corpus = load_corpus_from_dir(corpus_dir)
         if not corpus:

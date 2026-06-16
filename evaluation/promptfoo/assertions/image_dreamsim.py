@@ -13,23 +13,23 @@ def get_assert(output: str, context):
     vars_ = context.get("vars", {})
     config = context.get("config", {}) or {}
 
-    input_image = vars_.get("input_image")
+    reference_image = vars_.get("reference_image")
     threshold = float(config.get("threshold", 0.75))
 
-    if not input_image:
+    if not reference_image:
         return {
             "pass": False,
             "score": 0.0,
-            "reason": f"Missing vars.input_image. Available vars: {list(vars_.keys())}",
+            "reason": f"Missing vars.reference_image. Available vars: {list(vars_.keys())}",
         }
 
-    input_image = Path(input_image)
+    reference_image = Path(reference_image)
 
-    if not input_image.exists():
+    if not reference_image.exists():
         return {
             "pass": False,
             "score": 0.0,
-            "reason": f"Input image does not exist: {input_image}",
+            "reason": f"Input image does not exist: {reference_image}",
         }
 
     try:
@@ -42,7 +42,7 @@ def get_assert(output: str, context):
             )
 
             distance = compute_dreamsim_distance(
-                image_a=input_image,
+                image_a=reference_image,
                 image_b=generated_image,
             )
 

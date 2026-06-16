@@ -28,7 +28,7 @@ def get_assert(output: str, context):
     config = context.get("config", {})
 
     threshold = float(config.get("threshold", 0.75))
-    reference_image = vars_.get("reference_image") or vars_.get("input_image")
+    reference_image = vars_.get("reference_image")
     debug_enabled = as_bool(config.get("debug", vars_.get("debug", False)))
     debug_dir = Path(config.get("debug_dir",vars_.get("debug_dir", "/app/debug_dists")))
 

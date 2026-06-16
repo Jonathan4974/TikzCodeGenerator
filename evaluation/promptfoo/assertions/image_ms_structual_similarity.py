@@ -11,7 +11,7 @@ def get_assert(output: str, context):
     config = context.get("config", {})
 
     threshold = float(config.get("threshold", 0.75))
-    reference_image = vars_.get("reference_image") or vars_.get("input_image")
+    reference_image = vars_.get("reference_image")
 
     image_size = config.get("size", vars_.get("ms_ssim_size", 448))
     image_size = int(image_size)

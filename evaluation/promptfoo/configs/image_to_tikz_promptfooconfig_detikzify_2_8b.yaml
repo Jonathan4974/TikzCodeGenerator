@@ -28,7 +28,7 @@ defaultTest:
   vars:
     debug: true
 
-    timeout: 6
+    timeout: 60
     crystalbleu_k: 500
     crystalbleu_n: 1
     lpips_net_type: alex
@@ -117,19 +117,4 @@ defaultTest:
       config:
         threshold: 0.75
 
-tests:
-  - vars:
-      input_image: /images/train-00000_row_00000000.png
-      reference_text: /references/train-00000_row_00000000.txt
-
-  - vars:
-      input_image: /images/train-00000_row_00000001.png
-      reference_text: /references/train-00000_row_00000001.txt
-
-  - vars:
-      input_image: /images/train-00000_row_00000002.png
-      reference_text: /references/train-00000_row_00000002.txt
-
-  - vars:
-      input_image: /images/train-00000_row_00000003.png
-      reference_text: /references/train-00000_row_00000003.txt
+tests: file:///image_manifest.csv

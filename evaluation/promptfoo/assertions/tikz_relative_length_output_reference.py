@@ -1,12 +1,12 @@
 from pathlib import Path
 
 
-def load_reference_text(reference_text: str) -> str:
-    if reference_text.startswith("file://"):
-        path = Path(reference_text.removeprefix("file://"))
+def load_reference_code(reference_code: str) -> str:
+    if reference_code.startswith("file://"):
+        path = Path(reference_code.removeprefix("file://"))
         return path.read_text(encoding="utf-8")
 
-    path = Path(reference_text)
+    path = Path(reference_code)
     return path.read_text(encoding="utf-8")
 
 
@@ -16,20 +16,20 @@ def length_error_to_similarity(relative_error: float) -> float:
 
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
-    reference_text = vars_.get("reference_text")
+    reference_code = vars_.get("reference_code")
 
     config = context.get("config")
     threshold = float(config.get("threshold", 0.75))
 
-    if not reference_text:
+    if not reference_code:
         return {
             "pass": False,
             "score": 0.0,
-            "reason": "Missing vars.reference_text",
+            "reason": "Missing vars.reference_code",
         }
 
     try:
-        reference = load_reference_text(reference_text)
+        reference = load_reference_code(reference_code)
 
         output_len = len(output.strip())
         reference_len = len(reference.strip())

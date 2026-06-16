@@ -9,8 +9,8 @@ from utils.compute_ssim import compute_image_ssim
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
 
-    input_image = vars_.get("input_image")
-    input_image = Path(input_image)
+    reference_image = vars_.get("reference_image")
+    reference_image = Path(reference_image)
 
     config = context.get("config")
     threshold = float(config.get("threshold", 0.75))
@@ -26,7 +26,7 @@ def get_assert(output: str, context):
             )
 
             score = compute_image_ssim(
-                image_a=input_image,
+                image_a=reference_image,
                 image_b=generated_image,
             )
 

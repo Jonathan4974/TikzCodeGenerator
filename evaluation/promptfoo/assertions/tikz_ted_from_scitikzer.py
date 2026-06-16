@@ -11,7 +11,7 @@ def get_assert(output: str, context):
     config = context.get("config", {})
 
     threshold = float(config.get("threshold", 0.75))
-    reference_text = vars_.get("reference_text")
+    reference_code = vars_.get("reference_code")
     language = str(config.get("language", vars_.get("ted_language", "en")))
     alpha = float(config.get("alpha", vars_.get("ted_alpha", 2.0)))
     rho = float(config.get("rho", vars_.get("ted_rho", 0.3)))
@@ -19,15 +19,15 @@ def get_assert(output: str, context):
     insertion = float(config.get("insertion", vars_.get("ted_insertion", 1.0)))
     tau = float(config.get("tau", vars_.get("ted_tau", 0.4)))
 
-    if not reference_text:
+    if not reference_code:
         return {
             "pass": False,
             "score": 0.0,
-            "reason": "Missing vars.reference_text",
+            "reason": "Missing vars.reference_code",
         }
 
     try:
-        reference = load_text_value(reference_text)
+        reference = load_text_value(reference_code)
 
         metrics = compute_ted_metrics(
             reference=reference,
