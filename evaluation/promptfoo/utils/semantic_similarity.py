@@ -22,7 +22,7 @@ HF_LOCAL_FILES_ONLY = os.getenv("HF_LOCAL_FILES_ONLY", "false").lower() in (
 )
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=2)
 def load_model(model_key: str):
     if model_key not in MODEL_NAMES:
         raise ValueError(f"Unknown model_key: {model_key}")
