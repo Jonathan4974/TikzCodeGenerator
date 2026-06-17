@@ -47,10 +47,6 @@ def count_latex_issues(log_text):
 
         if "Warning:" in s and not s.startswith("Package rerunfilecheck Warning:"):
             warnings += 1
-            import sys
-            print(f"\n===== LaTeX log: warning={warnings}, halt=1 =====", file=sys.stderr, flush=True)
-            print(s, file=sys.stderr, flush=True)
-            print("===== end LaTeX log =====\n", file=sys.stderr, flush=True)
 
         if s.startswith("Overfull \\") or s.startswith("Underfull \\"):
             badboxes += 1
