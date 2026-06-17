@@ -178,17 +178,6 @@ def render_tex_to_png(tex_code, output_path, metrics=None):
 
                 issues = count_latex_issues(log_text)
 
-                import sys
-                print(f"\n===== LaTeX log: engine={engine}, halt={halt} =====", file=sys.stderr, flush=True)
-                print({
-                        "engine": engine,
-                        "halt": halt,
-                        **issues,
-                        "returncode": result.returncode,
-                        "pdf_created": pdf.exists(),
-                    }, file=sys.stderr, flush=True)
-                print("===== end LaTeX log =====\n", file=sys.stderr, flush=True)
-
                 attempt_metrics = {
                     **issues,
                     "latex_returncode": result.returncode,
