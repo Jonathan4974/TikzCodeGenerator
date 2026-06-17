@@ -4,6 +4,9 @@ from typing import Optional
 import os
 import logging
 
+import asyncio
+import gc
+
 import torch
 from PIL import Image
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
@@ -80,6 +83,10 @@ def load_model():
         raise
 
 
+
+inference_lock = asyncio.Lock()
+
+
 @app.post("/detikzify")
 async def detikzify(
     image: UploadFile = File(...),
@@ -97,22 +104,32 @@ async def detikzify(
         raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     try:
-        figs = []
+        async with inference_lock:
+            best_score = None
+            best_fig = None
 
-        for score, fig in pipeline.simulate(image=pil_image, timeout=timeout):
-            figs.append((score, fig))
+            with torch.inference_mode():
+                for score, fig in pipeline.simulate(image=pil_image, timeout=timeout):
+                    if best_score is None or score > best_score:
+                        best_score = score
+                        best_fig = fig
 
-        if not figs:
-            logger.error("No TikZ figure generated")
-            raise HTTPException(status_code=500, detail="No TikZ figure generated")
+            if best_fig is None:
+                logger.error("No TikZ figure generated")
+                raise HTTPException(status_code=500, detail="No TikZ figure generated")
 
-        best_score, best_fig = max(figs, key=itemgetter(0))
+            output_path = "/tmp/fig.tex"
+            best_fig.save(output_path)
 
-        output_path = "/tmp/fig.tex"
-        best_fig.save(output_path)
+            with open(output_path, "r", encoding="utf-8") as f:
+                tikz_code = f.read()
 
-        with open(output_path, "r", encoding="utf-8") as f:
-            tikz_code = f.read()
+            # Explizit Referenzen entfernen
+            del best_fig
+            gc.collect()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         return JSONResponse({
             "model_path": MODEL_PATH,
@@ -127,14 +144,3 @@ async def detikzify(
         logger.exception("DeTikZify request failed")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/health")
-def health():
-    return {
-        "status": "ok",
-        "model_path": MODEL_PATH,
-        "quantization": QUANTIZATION,
-        "model_loaded": pipeline is not None,
-        "cuda_available": torch.cuda.is_available(),
-        "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
-    }
