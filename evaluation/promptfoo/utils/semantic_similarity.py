@@ -14,7 +14,7 @@ MODEL_NAMES = {
 
 HF_CACHE_DIR = os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface")
 
-HF_LOCAL_FILES_ONLY = os.getenv("HF_LOCAL_FILES_ONLY", "true").lower() in (
+HF_LOCAL_FILES_ONLY = os.getenv("HF_LOCAL_FILES_ONLY", "false").lower() in (
     "1",
     "true",
     "yes",

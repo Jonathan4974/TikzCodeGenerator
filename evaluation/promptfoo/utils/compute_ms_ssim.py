@@ -4,17 +4,13 @@ from PIL import Image
 import torch
 from torchvision.transforms.functional import to_tensor, resize
 from torchmetrics.image import MultiScaleStructuralSimilarityIndexMeasure
+import os
 
 
 def load_image_for_ms_ssim(
     image_path: str | Path,
-    size: tuple[int, int] = (448, 448),
+    size: tuple[int, int],
 ) -> torch.Tensor:
-    """
-    Lädt ein Bild als Tensor [1, 3, H, W]
-    Wertebereich: [0, 1]
-    Transparenz wird auf weißen Hintergrund gelegt.
-    """
     image_path = Path(image_path)
 
     img = Image.open(image_path).convert("RGBA")
@@ -34,8 +30,11 @@ def load_image_for_ms_ssim(
 def compute_image_ms_ssim(
     image_a: str | Path,
     image_b: str | Path,
-    size: tuple[int, int] = (448, 448),
 ) -> float:
+    
+    ref_image_size = int(os.getenv("REF_IMAGE_SIZE", "384"))
+    size = (ref_image_size, ref_image_size)
+
     tensor_a = load_image_for_ms_ssim(image_a, size=size)
     tensor_b = load_image_for_ms_ssim(image_b, size=size)
 

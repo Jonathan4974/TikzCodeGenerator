@@ -3,11 +3,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from skimage.metrics import structural_similarity as ssim
-
+import os
 
 def load_image_for_similarity(
     image_path: str | Path,
-    size: tuple[int, int] = (512, 512),
+    size: tuple[int, int],
 ) -> np.ndarray:
     image_path = Path(image_path)
 
@@ -25,8 +25,11 @@ def load_image_for_similarity(
 def compute_image_ssim(
     image_a: str | Path,
     image_b: str | Path,
-    size: tuple[int, int] = (512, 512),
 ) -> float:
+    
+    ref_image_size = int(os.getenv("REF_IMAGE_SIZE", "384"))
+    size = (ref_image_size, ref_image_size)
+
     arr_a = load_image_for_similarity(image_a, size=size)
     arr_b = load_image_for_similarity(image_b, size=size)
 

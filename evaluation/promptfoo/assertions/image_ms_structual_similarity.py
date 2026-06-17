@@ -13,10 +13,6 @@ def get_assert(output: str, context):
     threshold = float(config.get("threshold", 0.75))
     reference_image = vars_.get("reference_image")
 
-    image_size = config.get("size", vars_.get("ms_ssim_size", 448))
-    image_size = int(image_size)
-    size = (image_size, image_size)
-
     if not reference_image:
         return {
             "pass": False,
@@ -41,8 +37,7 @@ def get_assert(output: str, context):
 
             similarity = compute_image_ms_ssim(
                 image_a=reference_image,
-                image_b=generated_image,
-                size=size,
+                image_b=generated_image
             )
 
         return {

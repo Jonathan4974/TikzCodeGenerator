@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import subprocess
@@ -13,8 +14,8 @@ class TikzRenderError(RuntimeError):
 
 def normalize_png_canvas(
     image_path: str | Path,
+    target_size: tuple[int, int],
     output_path: str | Path | None = None,
-    target_size: tuple[int, int] = (448, 448),
     background: str = "white",
     upscale: bool = True,
 ) -> Path:
@@ -232,6 +233,7 @@ def run_command(command: list[str], cwd: Path) -> subprocess.CompletedProcess:
 def compile_candidate_to_png(
     tex_code: str,
     output_path: str | Path,
+    target_size: tuple[int, int],
     dpi: int = 200,
     engine: str = "pdflatex",
     crop_pdf: bool = True,
@@ -240,7 +242,6 @@ def compile_candidate_to_png(
     png_padding: int = 4,
     png_tolerance: int = 10,
     normalize_canvas: bool = True,
-    target_size: tuple[int, int] = (448, 448),
     upscale_canvas: bool = True,
 ) -> Path:
     output_path = Path(output_path)
@@ -336,8 +337,8 @@ def compile_candidate_to_png(
         if normalize_canvas:
             normalize_png_canvas(
                 image_path=generated_png,
-                output_path=generated_png,
                 target_size=target_size,
+                output_path=generated_png,
                 upscale=upscale_canvas,
             )
 
@@ -388,10 +389,12 @@ def render_tex_to_png(
     png_padding: int = 4,
     png_tolerance: int = 10,
     normalize_canvas: bool = True,
-    target_size: tuple[int, int] = (448, 448),
     upscale_canvas: bool = True,
 ) -> Path:
     errors = []
+
+    ref_image_size = int(os.getenv("REF_IMAGE_SIZE", "384"))
+    target_size = (ref_image_size, ref_image_size)
 
     available_engines = [engine for engine in engines if shutil.which(engine)]
 
@@ -411,6 +414,7 @@ def render_tex_to_png(
                 return compile_candidate_to_png(
                     tex_code=candidate_tex,
                     output_path=output_path,
+                    target_size=target_size,
                     dpi=dpi,
                     engine=engine,
                     crop_pdf=crop_pdf,
@@ -419,7 +423,6 @@ def render_tex_to_png(
                     png_padding=png_padding,
                     png_tolerance=png_tolerance,
                     normalize_canvas=normalize_canvas,
-                    target_size=target_size,
                     upscale_canvas=upscale_canvas,
                 )
 

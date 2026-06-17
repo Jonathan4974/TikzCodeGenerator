@@ -4,10 +4,13 @@ import numpy as np
 import torch
 from PIL import Image
 from torchmetrics.image.dists import DeepImageStructureAndTextureSimilarity
-
+import os
 
 _dists_metric = None
 _dists_device = None
+
+ref_image_size = int(os.getenv("REF_IMAGE_SIZE", "384"))
+size = (ref_image_size, ref_image_size)
 
 
 def get_dists_metric():
@@ -27,7 +30,6 @@ def get_dists_metric():
 
 def load_image_for_dists(
     image_path: str | Path,
-    size: tuple[int, int] = (512, 512),
 ) -> torch.Tensor:
     image_path = Path(image_path)
 
@@ -47,12 +49,11 @@ def load_image_for_dists(
 def compute_dists_distance(
     image_a: str | Path,
     image_b: str | Path,
-    size: tuple[int, int] = (512, 512),
 ) -> float:
     metric, device = get_dists_metric()
 
-    img_a = load_image_for_dists(image_a, size=size).to(device)
-    img_b = load_image_for_dists(image_b, size=size).to(device)
+    img_a = load_image_for_dists(image_a).to(device)
+    img_b = load_image_for_dists(image_b).to(device)
 
     with torch.no_grad():
         distance = metric(img_a, img_b)
@@ -67,12 +68,11 @@ def dists_distance_to_similarity(distance: float) -> float:
 def compute_dists_similarity(
     image_a: str | Path,
     image_b: str | Path,
-    size: tuple[int, int] = (512, 512),
 ) -> float:
+
     distance = compute_dists_distance(
         image_a=image_a,
-        image_b=image_b,
-        size=size,
+        image_b=image_b
     )
 
     return dists_distance_to_similarity(distance)
