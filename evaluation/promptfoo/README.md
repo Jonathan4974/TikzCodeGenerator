@@ -5,7 +5,7 @@ docker run --rm -it \
   --env-file .env \
   -v "$PWD:/app" \
   -v "$PWD/promptfoo-db:/root/.promptfoo" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/image_manifest.csv:/image_manifest.csv" \
+  -v "/home/jonas/Datasets/TikZ/benchmark_data/small_manifest.csv:/image_manifest.csv" \
   -v "/home/jonas/Datasets/TikZ/benchmark_data/images:/images" \
   -v "/home/jonas/Datasets/TikZ/benchmark_data/references:/references" \
   -v "/home/jonas/Datasets/TikZ/benchmark_data/captions:/captions" \

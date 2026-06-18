@@ -36,10 +36,25 @@ for row_index, row in df.iterrows():
         "reference_code": f"/references/{code_name}",
         "caption": f"file:///captions/{caption_name}",
         "input_image_format_for_vlm": f"file:///images/{image_name}"
-
     })
 
 manifest = pd.DataFrame(manifest_rows)
+
 manifest.to_csv(base / "image_manifest.csv", index=False)
 
+n = 100
+
+if n > len(manifest):
+    raise ValueError(f"n={n} ist größer als die Anzahl der verfügbaren Zeilen: {len(manifest)}")
+
+small_manifest = manifest.sample(
+    n=n,
+    replace=False,      # keine Dopplungen
+    random_state=None   # jedes Mal andere zufällige Auswahl
+)
+
+small_manifest.to_csv(base / "small_manifest.csv", index=False)
+
 print("Finished!!!")
+print(f"Full manifest: {len(manifest)} rows")
+print(f"Small manifest: {len(small_manifest)} rows")
