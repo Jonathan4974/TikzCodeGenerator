@@ -56,7 +56,7 @@ def try_import_siglip_cc():
         sys.path.insert(0, str(promptfoo_dir))
 
     try:
-        from utils.siglip_cc_similarity import compute_siglip_cc, embed_image
+        from siglip_cc_similarity import compute_siglip_cc, embed_image
 
         return compute_siglip_cc, embed_image
     except ImportError as exc:
