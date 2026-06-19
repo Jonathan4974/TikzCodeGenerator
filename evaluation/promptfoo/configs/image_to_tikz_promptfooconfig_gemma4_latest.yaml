@@ -1,4 +1,5 @@
-description: image to tikz code using gemma4:e2b-it-qat
+description: image to tikz code using gemma4:31b-it-q4_K_M
+
 
 prompts:
   - |
@@ -16,15 +17,15 @@ providers:
         Content-Type: application/json
       body:
         prompt: "{{prompt}}"
-        image: "{{input_image}}"
-        model: "gemma4:e2b-it-qat"
+        image: "{{reference_image}}"
+        model: "gemma4:31b-it-q4_K_M"
       responseParser: json.output
 
 defaultTest:
   vars:
     debug: true
 
-    timeout: 6
+    timeout: 60
     crystalbleu_k: 500
     crystalbleu_n: 1
     lpips_net_type: alex
@@ -106,7 +107,6 @@ defaultTest:
       metric: relative_length_error
       config:
         threshold: 0.8
-
 
     - type: python
       value: file:///app/assertions/image_ms_structual_similarity.py

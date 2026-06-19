@@ -2,3 +2,5 @@
 *.parquet
 sample_test_rows.py
 sampled_rows/
+evaluation/results
+.vscode

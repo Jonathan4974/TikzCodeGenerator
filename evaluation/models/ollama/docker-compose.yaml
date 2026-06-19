@@ -19,7 +19,7 @@ services:
     environment:
       OLLAMA_URL: http://ollama:11434/api/chat
     volumes:
-      - /home/jonas/Datasets/TikZ/DaTikZ-V4/images:/images:ro
+      - /home/jonas/Datasets/TikZ/benchmark_data/images:/images:ro
     depends_on:
       - ollama
     restart: unless-stopped

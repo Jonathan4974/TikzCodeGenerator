@@ -25,13 +25,13 @@ providers:
     label: chatgpt-gpt-5.5
     config:
       temperature: 0
-      max_tokens: 4096
+      max_tokens: 15000
 
 defaultTest:
   vars:
     debug: true
 
-    timeout: 6
+    timeout: 60
     crystalbleu_k: 500
     crystalbleu_n: 1
     lpips_net_type: alex
@@ -113,7 +113,6 @@ defaultTest:
       metric: relative_length_error
       config:
         threshold: 0.8
-
 
     - type: python
       value: file:///app/assertions/image_ms_structual_similarity.py
