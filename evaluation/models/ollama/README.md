@@ -79,10 +79,15 @@ curl http://127.0.0.1:11434/api/generate \
 
 ### Running on the GPU cluster with Slurm
 
-To run Ollama on the GPU cluster, use the provided Slurm script:
+To run Ollama on the GPU cluster, use the provided Slurm script. With that you can test if ollama works correctly. 
+The ollama_client_test.sbatch also starts the ollama client via a fastapi. This is useful for using ollama in promptfoo.
 
 ```bash
 sbatch ollama_test.sbatch
+```
+
+```bash
+sbatch ollama_client_test.sbatch
 ```
 
 You can check the job status with:

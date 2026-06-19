@@ -1,2 +1,3 @@
 ollama-data/
 ollama+ollama+latest.sqsh
+ollama_client/__pycache__

@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-base = Path("/home/jonas/Datasets/TikZ/benchmark_data")
+base = Path("/usr/prakt/s0030/projects/data/benchmark_data")
 df = pd.read_parquet(base / "datikz-benchmark.parquet")
 
 image_dir = base / "images"
@@ -32,10 +32,10 @@ for row_index, row in df.iterrows():
     caption_path.write_text(str(row["caption"]), encoding="utf-8")
 
     manifest_rows.append({
-        "reference_image": f"/images/{image_name}",
-        "reference_code": f"/references/{code_name}",
-        "caption": f"file:///captions/{caption_name}",
-        "input_image_format_for_vlm": f"file:///images/{image_name}"
+        "reference_image": f"{base}/images/{image_name}",
+        "reference_code": f"{base}/references/{code_name}",
+        "caption": f"file:///{base}/captions/{caption_name}",
+        "input_image_format_for_vlm": f"file:///{base}/images/{image_name}"
     })
 
 manifest = pd.DataFrame(manifest_rows)
