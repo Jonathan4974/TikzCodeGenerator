@@ -76,3 +76,43 @@ curl http://127.0.0.1:11434/api/generate \
     "stream": false
   }'
 ```
+
+### Running on the GPU cluster with Slurm
+
+To run Ollama on the GPU cluster, use the provided Slurm script:
+
+```bash
+sbatch ollama_test.sbatch
+```
+
+You can check the job status with:
+
+```bash
+squeue -u s0030
+```
+
+If needed, cancel the job with:
+
+```bash
+scancel <jobid>
+```
+
+The Slurm output logs are written to the path configured in the `#SBATCH --output=...` line of `ollama_test.sbatch`.
+
+For example, if the script contains:
+
+```bash
+#SBATCH --output=/usr/prakt/s0030/projects/tikzcodegenerator/evaluation/logs/ollama-%j.out
+```
+
+then the log file will be written to:
+
+```text
+/usr/prakt/s0030/projects/tikzcodegenerator/evaluation/logs/ollama-<jobid>.out
+```
+
+You can inspect the log with:
+
+```bash
+tail -f /usr/prakt/s0030/projects/tikzcodegenerator/evaluation/logs/ollama-<jobid>.out
+```
