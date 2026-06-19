@@ -14,4 +14,4 @@ docker run --rm -it \
   -v promptfoo-dreamsim-cache:/root/.cache/dreamsim \
   -p 15500:15500 \
   promptfoo-tex \
-  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_detikzify_2_5_8b.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"
+  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_qwen3_6_35b_latest.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"

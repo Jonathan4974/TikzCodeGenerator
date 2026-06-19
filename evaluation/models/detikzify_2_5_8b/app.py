@@ -104,6 +104,8 @@ async def detikzify(
         raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     try:
+        # run model in inference mode. Otherwise the VRAM runs out of memory!!!!!!!!
+
         async with inference_lock:
             best_score = None
             best_fig = None
@@ -124,7 +126,8 @@ async def detikzify(
             with open(output_path, "r", encoding="utf-8") as f:
                 tikz_code = f.read()
 
-            # Explizit Referenzen entfernen
+            # emppty the cuda cache. Otherwise the VRAM runs out of memory!!!!!!!!
+
             del best_fig
             gc.collect()
 
