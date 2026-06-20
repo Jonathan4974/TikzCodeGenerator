@@ -13,6 +13,7 @@ providers:
     label: ollama-fastapi
     config:
       method: POST
+      timeout: 900000
       headers:
         Content-Type: application/json
       body:
@@ -114,4 +115,4 @@ defaultTest:
       config:
         threshold: 0.75
 
-tests: file:///usr/prakt/s0030/projects/data/benchmark_data/small_manifest.csv
+tests: file:///usr/prakt/s0030/projects/data/benchmark_data/image_manifest.csv

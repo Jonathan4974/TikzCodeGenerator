@@ -5,7 +5,7 @@
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1,VRAM:24G
 #SBATCH --constraint=GPU_MODEL:rtx_6000
-#SBATCH --time=0-02:00:00
+#SBATCH --time=0-08:00:00
 #SBATCH --part=PRACT
 #SBATCH --qos=practical_course
 #SBATCH --mail-type=NONE
@@ -35,10 +35,11 @@ CLIENT_ENV="ollama-client"
 PROMPTFOO_ENV="promptfoo"
 PROMPTFOO_ENV_DIR="$PRAKT_DIR/miniconda3/envs/$PROMPTFOO_ENV"
 PROMPTFOO_CONFIG="${PROMPTFOO_CONFIG:?PROMPTFOO_CONFIG must be set}"
+MANIFEST_SPLIT="${MANIFEST_SPLIT:-0}"
 PROMPTFOO_PORT="15500"
 
 PROMPTFOO_BASE_DIR="$PROJECT/evaluation/promptfoo"
-RESULT_DIR="$PROJECT/evaluation/results/$MODEL_SAFE/$TYPE"
+RESULT_DIR="$PROJECT/evaluation/results/$MODEL_SAFE/$TYPE/split_${MANIFEST_SPLIT}"
 PROMPTFOO_PERSIST_DIR="$RESULT_DIR/promptfoo-db"
 PROMPTFOO_RUN_DIR="/tmp/promptfoo-${I9_USER}-${SLURM_JOB_ID}"
 

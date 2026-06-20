@@ -3,3 +3,4 @@ result
 .cache
 .env
 cache
+generated_configs

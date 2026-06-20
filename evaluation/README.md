@@ -86,7 +86,11 @@ Contains the local TeX Live installation.
 
 This Python script is a small wrapper around the setup scripts and the Slurm job submission.
 
-It can:
+Since each Slurm job is limited to 8 hours, the full benchmark manifest should first be split into multiple smaller manifest files. The script can then run the evaluation split by split: it updates the Promptfoo configuration to point to the current manifest split, submits the corresponding Slurm job, waits for it to finish, and then starts the next split.
+
+After all splits have finished, the individual results can be merged into one final benchmark result.
+
+The python script can:
 
 1. run `setup_latex.sh`,
 2. run `setup_envs.sh`,
@@ -110,6 +114,9 @@ python run_setup_job_promptfoo_ollama.py \
   --user <I9_USER> \
   --model gemma4:e2b-it-qat \
   --type img-tikz \
+  --start-split 1 \
+  --num-splits 10 \
+  --wait-seconds 600 \
   --promptfoo-config /usr/prakt/<I9_USER>/projects/tikzcodegenerator/evaluation/promptfoo/configs/image_to_tikz_promptfooconfig_gemma_latest.yaml
 ```
 
@@ -122,6 +129,9 @@ python run_setup_job_promptfoo_ollama.py \
   --skip-envs \
   --model gemma4:e2b-it-qat \
   --type img-tikz \
+  --start-split 1 \
+  --num-splits 10 \
+  --wait-seconds 600 \
   --promptfoo-config /usr/prakt/<I9_USER>/projects/tikzcodegenerator/evaluation/promptfoo/configs/image_to_tikz_promptfooconfig_gemma_latest.yaml
 ```
 
@@ -243,21 +253,3 @@ Open locally:
 ```text
 http://127.0.0.1:15500
 ```
-
-
-
-python run_setup_job_promptfoo_ollama.py \
-  --user s0030 \
-  --model gemma4:e2b-it-qat \
-  --type img-tikz \
-  --promptfoo-config /usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/configs/image_to_tikz_promptfooconfig_gemma_latest.yaml
-
-
-
-python run_setup_job_promptfoo_ollama.py \
-  --user s0030 \
-  --skip-latex \
-  --skip-envs \
-  --model gemma4:e2b-it-qat \
-  --type img-tikz \
-  --promptfoo-config /usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/configs/image_to_tikz_promptfooconfig_gemma_latest.yaml
