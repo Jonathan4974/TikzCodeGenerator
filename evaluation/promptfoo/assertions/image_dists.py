@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import traceback
 import shutil
+import os
 
 from utils.tikz_rendering import render_tex_to_png
 from utils.dists_similarity import (
@@ -30,7 +31,7 @@ def get_assert(output: str, context):
     threshold = float(config.get("threshold", 0.75))
     reference_image = vars_.get("reference_image")
     debug_enabled = as_bool(config.get("debug", vars_.get("debug", False)))
-    debug_dir = Path(config.get("debug_dir",vars_.get("debug_dir", "/app/debug_dists")))
+    generated_image_dir = Path(os.getenv("GENERATED_IMAGE_DIR", "none"))
 
     if not reference_image:
         return {
@@ -65,12 +66,12 @@ def get_assert(output: str, context):
             debug_generated = None
 
             if debug_enabled:
-                debug_dir.mkdir(parents=True, exist_ok=True)
+                generated_image_dir.mkdir(parents=True, exist_ok=True)
 
                 test_id = reference_image.stem
-                debug_generated = debug_dir / f"{test_id}_generated.png"
-                debug_reference = debug_dir / f"{test_id}_reference.png"
-                debug_output = debug_dir / f"{test_id}_output.tex"
+                debug_generated = generated_image_dir / f"{test_id}_generated.png"
+                debug_reference = generated_image_dir / f"{test_id}_reference.png"
+                debug_output = generated_image_dir / f"{test_id}_output.tex"
 
                 shutil.copyfile(generated_image, debug_generated)
                 shutil.copyfile(reference_image, debug_reference)

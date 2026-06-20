@@ -1,6 +1,6 @@
 from pathlib import Path
 import traceback
-
+import os
 from utils.crystalbleu_metric import compute_crystalbleu_score
 
 
@@ -13,7 +13,7 @@ def get_assert(output: str, context):
 
     config = context.get("config")
     threshold = float(config.get("threshold", 0.75))
-    reference_code_dir = str(config.get("reference_code_dir", "/usr/prakt/s0030/projects/data/"))
+    reference_code_dir = str(os.getenv("REFERENCES_DIR", "none"))
     
     if not reference_code_path:
         return {

@@ -1,6 +1,6 @@
 from pathlib import Path
 import traceback
-
+import os
 from utils.crystalbleu_similarity_from_scitikzer import compute_crystalbleu_score
 
 
@@ -52,8 +52,8 @@ def get_assert(output: str, context):
     k = int(config.get("k", vars_.get("crystalbleu_k", 500)))
     n = int(config.get("n", vars_.get("crystalbleu_n", 4)))
     use_cache = as_bool(config.get("use_cache",vars_.get("crystalbleu_use_cache", True)), default=True)
-    cache_dir = config.get("cache_dir", vars_.get("crystalbleu_cache_dir", "/app/.cache/crystalbleu_latex"))
-    corpus_dir = config.get("corpus_dir", vars_.get("crystalbleu_corpus_dir", "/references"))
+    cache_dir = str(os.getenv("CRYSTALBLEU_SCITIKZER_CACHE_DIR", "none"))
+    corpus_dir = str(os.getenv("REFERENCES_DIR", "none"))
 
     if not reference_code:
         return {
