@@ -1,5 +1,6 @@
 promptfoo-db
-debug_dists
+debug_dist
 .cache
 .env
 cache
+*.pkl

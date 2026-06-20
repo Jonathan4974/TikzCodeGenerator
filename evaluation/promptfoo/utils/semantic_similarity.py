@@ -12,7 +12,7 @@ MODEL_NAMES = {
     "siglip": "google/siglip-base-patch16-224",
 }
 
-HF_CACHE_DIR = os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface")
+HF_CACHE_DIR = os.getenv("HF_HOME", "/root/.cache/huggingface")
 
 HF_LOCAL_FILES_ONLY = os.getenv("HF_LOCAL_FILES_ONLY", "false").lower() in (
     "1",

@@ -5,3 +5,4 @@ sampled_rows/
 evaluation/results
 .vscode
 evaluation/logs
+evaluation/cache
