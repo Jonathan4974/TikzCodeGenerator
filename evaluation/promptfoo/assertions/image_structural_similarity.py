@@ -3,7 +3,7 @@ import tempfile
 import traceback
 
 from pf_utils.tikz_rendering import render_tex_to_png
-from pf_utils.compute_ssim import compute_image_ssim
+from pf_utils.ssim_metric import compute_image_ssim
 
 
 def get_assert(output: str, context):

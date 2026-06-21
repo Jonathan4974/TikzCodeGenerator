@@ -69,12 +69,6 @@ defaultTest:
         threshold: 0.6
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_siglip_cc.py
-      metric: siglip_cc
-      config:
-        threshold: 0.7
-
-    - type: python
       value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_lpips.py
       metric: lpips_similarity
       config:

@@ -12,7 +12,6 @@ def failed(reason: str):
         "pass": False,
         "score": 0.0,
         "namedScores": {
-            "ted_similarity": 0.0,
             "ted_distance": BAD_TED_DISTANCE,
         },
         "reason": reason,
@@ -54,7 +53,6 @@ def get_assert(output: str, context):
             "pass": ted_similarity >= threshold,
             "score": ted_similarity,
             "namedScores": {
-                "ted_similarity": ted_similarity,
                 "ted_distance": ted,
             },
             "reason": (

@@ -5,10 +5,13 @@ import shutil
 import os
 
 from pf_utils.tikz_rendering import render_tex_to_png
-from pf_utils.dists_similarity import (
+from pf_utils.dists_metric import (
     compute_dists_distance,
     dists_distance_to_similarity,
 )
+
+
+BAD_DISTS_DISTANCE = 999.0
 
 
 def as_bool(value, default=False) -> bool:
@@ -24,6 +27,17 @@ def as_bool(value, default=False) -> bool:
     return bool(value)
 
 
+def failed(reason: str):
+    return {
+        "pass": False,
+        "score": 0.0,
+        "namedScores": {
+            "dists_distance": BAD_DISTS_DISTANCE,
+        },
+        "reason": reason,
+    }
+
+
 def get_assert(output: str, context):
     vars_ = context.get("vars", {})
     config = context.get("config", {})
@@ -34,20 +48,12 @@ def get_assert(output: str, context):
     generated_image_dir = Path(os.getenv("GENERATED_IMAGE_DIR", "none"))
 
     if not reference_image:
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": "Missing vars.input_image or vars.reference_image",
-        }
+        return failed("Missing vars.input_image or vars.reference_image")
 
     reference_image = Path(reference_image)
 
     if not reference_image.exists():
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": f"Reference image does not exist: {reference_image}",
-        }
+        return failed(f"Reference image does not exist: {reference_image}")
 
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -62,8 +68,6 @@ def get_assert(output: str, context):
             )
 
             similarity = dists_distance_to_similarity(distance)
-
-            debug_generated = None
 
             if debug_enabled:
                 generated_image_dir.mkdir(parents=True, exist_ok=True)
@@ -85,12 +89,11 @@ def get_assert(output: str, context):
         return {
             "pass": similarity >= threshold,
             "score": similarity,
-            "reason": reason
+            "namedScores": {
+                "dists_distance": distance,
+            },
+            "reason": reason,
         }
 
     except Exception as e:
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": f"DISTS failed: {e}\n{traceback.format_exc()}",
-        }
+        return failed(f"DISTS failed: {e}\n{traceback.format_exc()}")

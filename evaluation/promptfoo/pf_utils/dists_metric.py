@@ -55,7 +55,7 @@ def compute_dists_distance(
     img_a = load_image_for_dists(image_a).to(device)
     img_b = load_image_for_dists(image_b).to(device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         distance = metric(img_a, img_b)
 
     return float(distance.item())

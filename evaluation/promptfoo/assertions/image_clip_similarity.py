@@ -3,7 +3,7 @@ import tempfile
 import traceback
 
 from pf_utils.tikz_rendering import render_tex_to_png
-from pf_utils.semantic_similarity import image_cosine_similarity
+from pf_utils.clip_siglip_metric import image_cosine_similarity
 
 
 def get_assert(output: str, context):
