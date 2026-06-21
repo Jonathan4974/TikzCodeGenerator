@@ -96,7 +96,7 @@ export GENERATED_IMAGE_DIR
 cleanup() {
   echo "Stopping services..."
 
-  kill "${PROMPTFOO_PID:-}" 2>/dev/null || true
+  kill "${PROMPTFOO_VIEW_PID:-}" 2>/dev/null || true
   kill "${CLIENT_PID:-}" 2>/dev/null || true
   kill "${SERVER_PID:-}" 2>/dev/null || true
 
@@ -164,21 +164,24 @@ echo "Checking Promptfoo..."
 conda run -n "$PROMPTFOO_ENV" promptfoo --version
 
 conda run -n "$PROMPTFOO_ENV" \
+  promptfoo view \
+    --port "$PROMPTFOO_PORT" \
+    --no \
+  > "$LOG_DIR/promptfoo-view-${SLURM_JOB_ID}.log" 2>&1 &
+
+PROMPTFOO_VIEW_PID=$!
+
+conda run -n "$PROMPTFOO_ENV" \
   promptfoo eval \
     -c "$PROMPTFOO_CONFIG" \
     -j 1 \
     --watch \
-  > "$LOG_DIR/promptfoo-eval-${SLURM_JOB_ID}.log" 2>&1 &
+  > "$LOG_DIR/promptfoo-eval-${SLURM_JOB_ID}.log" 2>&1
 
-PROMPTFOO_PID=$!
+EVAL_EXIT=$?
 
-sleep 5
-
-conda run -n "$PROMPTFOO_ENV" \
-  promptfoo view \
-    --port "$PROMPTFOO_PORT" \
-    --no \
-  > "$LOG_DIR/promptfoo-view-${SLURM_JOB_ID}.log" 2>&1
-
+echo "Promptfoo eval finished with exit code $EVAL_EXIT"
 echo "Job finished."
 date
+
+exit "$EVAL_EXIT"
