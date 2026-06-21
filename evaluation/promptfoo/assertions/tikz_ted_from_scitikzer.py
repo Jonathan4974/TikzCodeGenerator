@@ -1,6 +1,6 @@
 import traceback
 
-from utils.tikz_ted_similarity_from_scitikzer import (
+from pf_utils.tikz_ted_similarity_from_scitikzer import (
     compute_ted_metrics,
     load_text_value,
 )

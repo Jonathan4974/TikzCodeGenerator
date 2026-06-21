@@ -78,8 +78,10 @@ export PYTHONPATH="$PROJECT:$PROJECT/evaluation/promptfoo:${PYTHONPATH:-}"
 
 export HF_HOME="$MODEL_STORE/huggingface"
 export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
+export HF_HUB_CACHE="$HF_HOME/hub"
 export TRANSFORMERS_CACHE="$HF_HOME/transformers"
 export HF_DATASETS_CACHE="$HF_HOME/datasets"
+export HF_ASSETS_CACHE="$HF_HOME/assets"
 export XDG_CACHE_HOME="$MODEL_STORE/cache"
 
 export TORCH_HOME="$MODEL_STORE/torch"

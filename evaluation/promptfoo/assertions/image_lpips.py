@@ -2,8 +2,8 @@ from pathlib import Path
 import tempfile
 import traceback
 
-from utils.tikz_rendering import render_tex_to_png
-from utils.lpips_similarity import (
+from pf_utils.tikz_rendering import render_tex_to_png
+from pf_utils.lpips_similarity import (
     compute_lpips_distance,
     lpips_distance_to_similarity,
 )

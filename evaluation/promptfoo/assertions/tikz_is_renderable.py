@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 import traceback
 
-from utils.tikz_rendering import render_tex_to_png, TikzRenderError
+from pf_utils.tikz_rendering import render_tex_to_png, TikzRenderError
 
 
 def get_assert(output: str, context):

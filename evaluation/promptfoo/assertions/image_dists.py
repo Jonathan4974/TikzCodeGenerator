@@ -4,8 +4,8 @@ import traceback
 import shutil
 import os
 
-from utils.tikz_rendering import render_tex_to_png
-from utils.dists_similarity import (
+from pf_utils.tikz_rendering import render_tex_to_png
+from pf_utils.dists_similarity import (
     compute_dists_distance,
     dists_distance_to_similarity,
 )

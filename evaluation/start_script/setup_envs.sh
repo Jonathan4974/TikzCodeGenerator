@@ -36,6 +36,8 @@ conda install -y -n "$PROMPTFOO_ENV" -c conda-forge \
 
 conda run -n "$PROMPTFOO_ENV" npm install -g promptfoo --no-fund
 
+conda run -n "$PROMPTFOO_ENV" pip install --upgrade pip setuptools wheel
+
 conda run -n "$PROMPTFOO_ENV" pip uninstall -y \
   numpy \
   torch \
@@ -65,10 +67,14 @@ conda run -n "$PROMPTFOO_ENV" pip install \
   torchmetrics \
   pygments \
   sacremoses \
+  datasets \
+  huggingface_hub \
   transformers \
   sentencepiece \
   peft \
-  dreamsim
+  pymupdf \
+  dreamsim \
+  protobuf
 
 if [[ -x "$PROMPTFOO_ENV_DIR/bin/gs" ]]; then
   ln -sf "$PROMPTFOO_ENV_DIR/bin/gs" "$PROMPTFOO_ENV_DIR/bin/ghostscript"

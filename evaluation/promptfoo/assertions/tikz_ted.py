@@ -1,7 +1,7 @@
 from pathlib import Path
 import traceback
 
-from utils.tex_edit_distance import compute_ted
+from pf_utils.tex_edit_distance import compute_ted
 
 
 def get_assert(output: str, context):

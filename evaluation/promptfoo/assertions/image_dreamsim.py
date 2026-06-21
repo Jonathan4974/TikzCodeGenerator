@@ -2,11 +2,8 @@ from pathlib import Path
 import tempfile
 import traceback
 
-from utils.tikz_rendering import render_tex_to_png
-from utils.dreamsim_similarity import (
-    compute_dreamsim_distance,
-    dreamsim_distance_to_similarity,
-)
+from pf_utils.tikz_rendering import render_tex_to_png
+from pf_utils.dreamsim_metric import compute_dreamsim_score
 
 
 def get_assert(output: str, context):
@@ -29,7 +26,7 @@ def get_assert(output: str, context):
         return {
             "pass": False,
             "score": 0.0,
-            "reason": f"Input image does not exist: {reference_image}",
+            "reason": f"Reference image does not exist: {reference_image}",
         }
 
     try:
@@ -41,19 +38,20 @@ def get_assert(output: str, context):
                 output_path=generated_image,
             )
 
-            distance = compute_dreamsim_distance(
-                image_a=reference_image,
-                image_b=generated_image,
+            score = compute_dreamsim_score(
+                image_a=str(reference_image),
+                image_b=str(generated_image)
             )
 
-            score = dreamsim_distance_to_similarity(distance)
+            distance = 1.0 - score
 
         return {
             "pass": score >= threshold,
             "score": score,
             "reason": (
                 f"DreamSim similarity={score:.4f}, "
-                f"DreamSim distance={distance:.4f}"
+                f"DreamSim distance={distance:.4f}, "
+                f"threshold={threshold:.4f}"
             ),
         }
 
