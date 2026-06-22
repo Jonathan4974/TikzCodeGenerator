@@ -47,7 +47,7 @@ TEXLIVE_DIR="$PRAKT_DIR/projects/full_latex/texlive/2026"
 CONDA_SH="$PRAKT_DIR/miniconda3/etc/profile.d/conda.sh"
 
 DATA_DIR="$PRAKT_DIR/projects/data/benchmark_data"
-IMAGE_MANIFEST="$DATA_DIR/small_manifest.csv"
+IMAGE_MANIFEST="${IMAGE_MANIFEST:-$DATA_DIR/manifest_splits/image_manifest_1.csv}"
 IMAGES_DIR="$DATA_DIR/images"
 REFERENCES_DIR="$DATA_DIR/references"
 CAPTIONS_DIR="$DATA_DIR/captions"
@@ -59,7 +59,6 @@ mkdir -p \
   "$MODEL_STORE/huggingface" \
   "$MODEL_STORE/torch" \
   "$MODEL_STORE/dreamsim" \
-  "$MODEL_STORE/crystalbleu_scitikzer" \
   "$PROMPTFOO_PERSIST_DIR" \
   "$PROMPTFOO_RUN_DIR" \
   "$GENERATED_IMAGE_DIR"
@@ -86,7 +85,6 @@ export XDG_CACHE_HOME="$MODEL_STORE/cache"
 
 export TORCH_HOME="$MODEL_STORE/torch"
 export DREAMSIM_CACHE_DIR="$MODEL_STORE/dreamsim"
-export CRYSTALBLEU_SCITIKZER_CACHE_DIR="$MODEL_STORE/crystalbleu_scitikzer"
 
 export OLLAMA_CLIENT_URL="http://127.0.0.1:8004/generate"
 export IMAGE_MANIFEST

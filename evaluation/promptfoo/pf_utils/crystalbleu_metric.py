@@ -128,7 +128,7 @@ def compute_crystalbleu_score(
     corpus_dir: str,
     k: int = 500,
     n: int = 4,
-    use_cache: bool = False,
+    use_cache: bool = True,
 ):
     corpus = load_corpus_from_dir(corpus_dir)
 

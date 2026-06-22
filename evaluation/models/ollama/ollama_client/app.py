@@ -4,6 +4,7 @@ import os
 
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 
@@ -28,7 +29,7 @@ def image_to_base64(path: str) -> str:
     return base64.b64encode(path.read_bytes()).decode("utf-8")
 
 
-@app.post("/generate")
+@app.post("/generate", response_class=PlainTextResponse)
 def generate(body: RequestBody):
     try:
         model = body.model or DEFAULT_OLLAMA_MODEL
@@ -50,14 +51,21 @@ def generate(body: RequestBody):
             },
         }
 
-        response = requests.post(OLLAMA_URL, json=payload, timeout=600)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=900)
         response.raise_for_status()
 
         data = response.json()
-        return {
-            "output": data["message"]["content"],
-            "model": model,
-        }
+        output = data.get("message", {}).get("content", "")
+
+        if not isinstance(output, str):
+            output = str(output)
+
+        output = output.strip()
+
+        if not output:
+            raise HTTPException(status_code=502, detail="Ollama returned empty output")
+
+        return output
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

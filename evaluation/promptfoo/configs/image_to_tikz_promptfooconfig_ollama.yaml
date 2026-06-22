@@ -1,4 +1,4 @@
-description: image to tikz code using gemma4:e2b-it-qat
+description: image to tikz code using qwen3-vl:8b-instruct
 
 
 prompts:
@@ -19,8 +19,7 @@ providers:
       body:
         prompt: "{{prompt}}"
         image: "{{reference_image}}"
-        model: "gemma4:e2b-it-qat"
-      responseParser: json.output
+        model: "qwen3-vl:8b-instruct"
 
 defaultTest:
   vars:
