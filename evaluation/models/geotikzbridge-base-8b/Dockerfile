@@ -64,6 +64,6 @@ RUN pip install -r https://raw.githubusercontent.com/sjy-1995/GeoTikzBridge/main
 
 COPY app.py /app/app.py
 
-EXPOSE 8004
+EXPOSE 8007
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8004"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8007"]

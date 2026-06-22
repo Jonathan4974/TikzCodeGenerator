@@ -109,7 +109,7 @@ def load_model():
         raise
 
 
-@app.post("/tikzero_rl")
+@app.post("/tikzilla_rl")
 def tikzilla(request: TikZillaRequest):
     if model is None or tokenizer is None:
         raise HTTPException(status_code=503, detail="Model is not loaded yet")

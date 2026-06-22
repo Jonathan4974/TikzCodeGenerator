@@ -1,26 +1,21 @@
-description: image to tikz code using geotikzbridge-base-8b
+description: vlm description to tikz code using tikzilla-8b-sft
 
 prompts:
-  - "{{input_image}}"
+  - "{{caption}}"
 
 providers:
   - id: http
-    label: geotikzbridge-base-8b
+    label: tikzilla-8b-sft
     config:
-      url: http://host.docker.internal:8007/geotikzbridge
+      url: http://host.docker.internal:8005/tikzilla_sft
       method: POST
-      multipart:
-        parts:
-          - kind: file
-            name: image
-            filename: input.png
-            contentType: image/png
-            source:
-              type: path
-              path: "file://{{input_image}}"
-
+      headers:
+        Content-Type: application/json
+      body:
+        text: "{{caption}}"
       transformResponse: json.tikz
-      
+
+  
 defaultTest:
   vars:
     debug: true
