@@ -38,3 +38,6 @@
 | anti_artifact          |   0.930 |  0.061 |
 | student_notes          |   0.932 |  0.058 |
 
+### Conclusion
+
+No real difference in doing some prompt engineering here..
