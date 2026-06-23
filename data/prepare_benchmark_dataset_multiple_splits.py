@@ -24,10 +24,10 @@ test_files = [
 corpus_dir = benchmark_base / "benchmark_corpus"
 image_dir = benchmark_base / "images"
 code_dir = benchmark_base / "references"
-caption_dir = benchmark_base / "captions"
+#caption_dir = benchmark_base / "captions"
 split_dir = benchmark_base / "manifest_splits"
 
-for directory in [corpus_dir, image_dir, code_dir, caption_dir, split_dir]:
+for directory in [corpus_dir, image_dir, code_dir, split_dir]:
     directory.mkdir(parents=True, exist_ok=True)
 
 
@@ -69,23 +69,22 @@ for parquet_path in test_files:
 
         image_name = f"{stem}.png"
         code_name = f"{stem}.txt"
-        caption_name = f"{stem}.txt"
+        #caption_name = f"{stem}.txt"
 
         image = row["image"]
         image_bytes = extract_image_bytes(image)
 
         image_path = image_dir / image_name
         code_path = code_dir / code_name
-        caption_path = caption_dir / caption_name
+        #caption_path = caption_dir / caption_name
 
         image_path.write_bytes(image_bytes)
         code_path.write_text(str(row["code"]), encoding="utf-8")
-        caption_path.write_text(str(row["caption"]), encoding="utf-8")
+        #caption_path.write_text(str(row["caption"]), encoding="utf-8")
 
         manifest_rows.append({
             "reference_image": f"{image_dir}/{image_name}",
             "reference_code": f"{code_dir}/{code_name}",
-            "caption": f"file:///{caption_dir}/{caption_name}",
             "input_image_format_for_vlm": f"file:///{image_dir}/{image_name}",
         })
 
