@@ -159,8 +159,8 @@ def main():
         trust_remote_code=True,
         torch_dtype=torch.float16,
     )
-    pipe.to("cuda:0")
-
+    pipe.enable_sequential_cpu_offload()
+    
     pixel_cc_ultrasketch = {name: [] for name in PROMPT_VARIANTS}
     pixel_cc_displacement = []
     pixel_cc_combined = {name: [] for name in PROMPT_VARIANTS}
