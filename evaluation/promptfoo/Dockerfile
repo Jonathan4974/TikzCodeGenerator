@@ -67,11 +67,16 @@ RUN pip3 install --break-system-packages \
     torchmetrics \
     pygments \
     sacremoses \
+    datasets \
+    huggingface_hub \
     torch \
     torchvision \
     transformers \
     sentencepiece \
-    dreamsim
+    dreamsim \
+    peft \
+    pymupdf \
+    protobuf
 
 RUN npm install -g promptfoo
 

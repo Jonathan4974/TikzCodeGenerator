@@ -1,7 +1,7 @@
 description: image to tikz code using detikzify-2-5-8b
 
 prompts:
-  - "{{reference_image}}"
+  - "image-to-tikz"
 
 providers:
   - id: http
@@ -31,7 +31,7 @@ defaultTest:
 
     timeout: 60
     crystalbleu_k: 500
-    crystalbleu_n: 1
+    crystalbleu_n: 4
     lpips_net_type: alex
     crystalbleu_use_cache: true
 
@@ -51,22 +51,11 @@ defaultTest:
       metric: crystalbleu
       config:
         threshold: 0.1
-
-    - type: python
-      value: file:///app/assertions/tikz_crystalbleu_from_scitikzer.py
-      metric: crystalbleu_scitikzer
-      config:
-        threshold: 0.1
+        crystalbleu_corpus: /crystalbleu_corpus
 
     - type: python
       value: file:///app/assertions/tikz_ted.py
       metric: ted_similarity
-      config:
-        threshold: 0.5
-
-    - type: python
-      value: file:///app/assertions/tikz_ted_from_scitikzer.py
-      metric: ted_similarity_scitikzer
       config:
         threshold: 0.5
 
@@ -81,12 +70,6 @@ defaultTest:
       metric: siglip_similarity
       config:
         threshold: 0.6
-
-    - type: python
-      value: file:///app/assertions/image_siglip_cc.py
-      metric: siglip_cc
-      config:
-        threshold: 0.7
 
     - type: python
       value: file:///app/assertions/image_lpips.py
