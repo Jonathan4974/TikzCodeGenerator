@@ -18,7 +18,7 @@ from detikzify.infer import DetikzifyPipeline
 
 
 logging.basicConfig(
-    level=logging.ERROR,
+    level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
@@ -92,9 +92,9 @@ async def detikzify(
     image: UploadFile = File(...),
     timeout: int = Form(60),
 ):
-    logger.error("REQUEST RECEIVED: image=%r timeout=%r", image.filename, timeout)
+    logger.info("REQUEST RECEIVED: image=%r timeout=%r", image.filename, timeout)
     if pipeline is None:
-        logger.error("Model is not loaded yet")
+        logger.info("Model is not loaded yet")
         raise HTTPException(status_code=503, detail="Model is not loaded yet")
 
     try:

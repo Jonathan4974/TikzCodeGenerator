@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
+FROM python:3.12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -11,15 +11,7 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=1
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-dev \
-    python3-pip \
-    python3-venv \
     git \
-    build-essential \
-    gcc \
-    g++ \
-    curl \
     ca-certificates \
     texlive-latex-base \
     texlive-latex-extra \
@@ -32,15 +24,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
 RUN pip install --upgrade pip setuptools wheel
 
 RUN pip install \
     torch==2.7.1 \
     torchvision==0.22.1 \
-    torchaudio==2.7.1 \
     --index-url https://download.pytorch.org/whl/cu128
 
 RUN pip install "detikzify[legacy] @ git+https://github.com/potamides/DeTikZify"
@@ -51,15 +39,14 @@ RUN pip install \
     safetensors \
     transformers \
     huggingface_hub \
-    hf_transfer
-
-RUN pip install \
+    hf_transfer \
     fastapi \
     uvicorn \
     python-multipart \
     pillow \
     pandas \
-    pyarrow
+    pyarrow \
+    && rm -rf /root/.cache/pip
 
 COPY app.py /app/app.py
 

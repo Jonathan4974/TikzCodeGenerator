@@ -32,8 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
-# Vanilla TeX Live full von CTAN/TUG installieren
-# option_doc 0 und option_src 0: alle Pakete, aber ohne Doku und Source-Dateien
+
 RUN mkdir -p /tmp/install-tl \
     && cd /tmp/install-tl \
     && wget -qO- https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz \
@@ -54,7 +53,7 @@ RUN mkdir -p /tmp/install-tl \
     && /usr/local/texlive/2026/bin/x86_64-linux/tlmgr path add \
     && rm -rf /tmp/install-tl
 
-RUN pip3 install --break-system-packages \
+RUN pip3 install --break-system-packages --no-cache-dir \
     pandas \
     pyarrow \
     pillow \
@@ -78,7 +77,9 @@ RUN pip3 install --break-system-packages \
     pymupdf \
     protobuf
 
-RUN npm install -g promptfoo
+RUN npm install -g promptfoo \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /root/.cache/ms-playwright
 
 COPY . .
 
