@@ -60,7 +60,7 @@ def build_quantization_config():
 @app.on_event("startup")
 def load_model():
     global pipeline
-
+    logger.info("Loading model")
     try:
         quantization_config = build_quantization_config()
 
@@ -77,6 +77,8 @@ def load_model():
 
         model, processor = load(**load_kwargs)
         pipeline = DetikzifyPipeline(model, processor)
+
+        logger.info("model loaded")
 
     except Exception:
         logger.exception("Failed to load model")
@@ -134,6 +136,8 @@ async def detikzify(
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+
+        logger.info("Return image")
 
         return JSONResponse({
             "model_path": MODEL_PATH,

@@ -6,7 +6,7 @@ import pandas as pd
 
 
 benchmark_base = Path("/usr/prakt/s0030/projects/data/benchmark_data/") 
-parquet_base = Path("/usr/prakt/s0030/projects/data/paqrquet_files/datikz-v2")
+parquet_base = Path("/usr/prakt/s0030/projects/data/paqrquet_files/our_dataset")
 
 parquet_files = sorted(parquet_base.glob("*.parquet"))
 

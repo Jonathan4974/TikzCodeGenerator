@@ -17,3 +17,21 @@ docker run --rm -it \
 
 
 
+
+on the server:
+
+apptainer build promptfoo.sif docker-archive:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/promptfoo.tar
+
+apptainer exec \
+  --env-file .env \
+  -B "$PWD:/app" \
+  -B "$PWD/result/promptfoo-db:/root/.promptfoo" \
+  -B "$PWD/result/generated_images:/generated_images" \
+  -B "/usr/prakt/s0030/projects/data/benchmark_data/manifest_splits/image_manifest_1.csv:/image_manifest.csv:ro" \
+  -B "/usr/prakt/s0030/projects/data/benchmark_data/benchmark_corpus:/crystalbleu_corpus:ro" \
+  -B "/usr/prakt/s0030/projects/data/benchmark_data/images:/images:ro" \
+  -B "/usr/prakt/s0030/projects/data/benchmark_data/benchmark_data/references:/references:ro" \
+  -B "/usr/prakt/s0030/projects/models:/models" \
+  --pwd /app \
+  promptfoo-tex.sif \
+  sh -lc 'promptfoo eval -c configs/image_to_tikz_promptfooconfig_detikzify_2_5_8b.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no'

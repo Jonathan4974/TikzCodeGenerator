@@ -27,5 +27,15 @@ docker run --rm -it \
   detikzify-2-5-8b-cuda128
 
 
-without quantization it needs 21646MiB VRAM
-With 8bit quantization it need 15253MiB VRAM
+
+on the server:
+
+apptainer build detikzify-2-5-8b.sif docker-archive:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/models/detikzify_2_5_8b/detikzify_2_5_8b.tar
+
+
+apptainer run --nv \
+  --bind "$PWD:/app" \
+  --bind "/usr/prakt/s0030/projects/models:/models" \
+  --env QUANTIZATION=none \
+  --pwd /app \
+  detikzify-2-5-8b.sif
