@@ -7,7 +7,7 @@ providers:
   - id: http
     label: detikzify-2-5-8b
     config:
-      url: http://127.0.0.1::8000/detikzify
+      url: http://127.0.0.1:8000/detikzify
       method: POST
       multipart:
         parts:

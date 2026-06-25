@@ -83,9 +83,9 @@ for parquet_path in test_files:
         #caption_path.write_text(str(row["caption"]), encoding="utf-8")
 
         manifest_rows.append({
-            "reference_image": f"{image_dir}/{image_name}",
-            "reference_code": f"{code_dir}/{code_name}",
-            "input_image_format_for_vlm": f"file:///{image_dir}/{image_name}",
+            "reference_image": f"/images/{image_name}",
+            "reference_code": f"/references/{code_name}",
+            "input_image_format_for_vlm": f"file:///images/{image_name}",
         })
 
         test_count += 1
