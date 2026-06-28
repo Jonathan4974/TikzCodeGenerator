@@ -1,11 +1,13 @@
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
+FROM python:3.12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
+
 ENV HF_HOME=/app/.cache/huggingface
 ENV TRANSFORMERS_CACHE=/app/.cache/huggingface
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
+
 ENV MODEL_CHECKPOINT=SJY-1995/GeoTikzBridge-Base-8B
 ENV MAX_NEW_TOKENS=4096
 ENV TEMPERATURE=0.1
@@ -14,16 +16,11 @@ ENV TOP_P=0.95
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-dev \
-    python3-pip \
-    python3-venv \
     git \
-    build-essential \
-    gcc \
-    g++ \
     curl \
     ca-certificates \
+    libglib2.0-0 \
+    libgl1 \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-pictures \
@@ -35,32 +32,55 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CC=/usr/bin/gcc
+ENV CXX=/usr/bin/g++
 
 RUN pip install --upgrade pip setuptools wheel
 
+# CUDA-enabled PyTorch wheels.
 RUN pip install \
     torch==2.7.1 \
     torchvision==0.22.1 \
-    torchaudio==2.7.1 \
     --index-url https://download.pytorch.org/whl/cu128
 
+# Minimal GeoTikzBridge / InternVL runtime requirements.
+# Excluded:
+# - decord: video decoding, problematic on Python 3.12
+# - deepspeed: heavy training/inference framework, not needed for this FastAPI app
+# - torch/torchvision: installed explicitly above as CUDA wheels
 RUN pip install \
-    accelerate \
+    "accelerate<1" \
     bitsandbytes \
-    safetensors \
-    transformers \
+    einops==0.6.1 \
+    einops-exts==0.0.4 \
     huggingface_hub \
-    hf_transfer
-
-RUN pip install \
+    hf_transfer \
+    imageio \
+    numpy==1.26.4 \
+    opencv-python-headless \
+    orjson \
+    peft==0.10.0 \
+    pyyaml \
+    scipy \
+    "sentencepiece>=0.2.0" \
+    shortuuid \
+    termcolor \
+    timm==0.9.12 \
+    tokenizers==0.15.1 \
+    tqdm \
+    transformers==4.37.2 \
+    yacs \
+    safetensors \
     fastapi \
     uvicorn \
     python-multipart \
     pillow
-
-RUN pip install -r https://raw.githubusercontent.com/sjy-1995/GeoTikzBridge/main/requirements/internvl_chat.txt
 
 COPY app.py /app/app.py
 

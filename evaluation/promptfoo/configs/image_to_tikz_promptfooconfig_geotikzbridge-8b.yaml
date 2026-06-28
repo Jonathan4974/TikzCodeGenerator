@@ -1,11 +1,17 @@
-description: image to tikz code using geotikzbridge-base-8b
+description: image to tikz code using geotikzbridge-instruct-8b
 
 prompts:
-  - "{{input_image}}"
+  - |
+    As a LaTeX graphics expert, translate the image into TikZ code suitable for academic publications. 
+    Focus on recreating geometric precision, typographic elements, and color schemes. 
+    The code must be compilable, efficient, and maintain the original image's visual fidelity for professional document integration.
+    Return only the full LaTeX document.
+    Do not use markdown fences.
+    Do not add explanations.
 
 providers:
   - id: http
-    label: geotikzbridge-base-8b
+    label: geotikzbridge-instruct-8b
     config:
       url: http://host.docker.internal:8007/geotikzbridge
       method: POST
@@ -17,7 +23,11 @@ providers:
             contentType: image/png
             source:
               type: path
-              path: "file://{{input_image}}"
+              path: "file://{{reference_image}}"
+
+          - kind: field
+            name: prompt
+            value: "{{prompt}}"
 
       transformResponse: json.tikz
       
@@ -25,9 +35,9 @@ defaultTest:
   vars:
     debug: true
 
-    timeout: 6
+    timeout: 60
     crystalbleu_k: 500
-    crystalbleu_n: 1
+    crystalbleu_n: 4
     lpips_net_type: alex
     crystalbleu_use_cache: true
 
@@ -47,22 +57,11 @@ defaultTest:
       metric: crystalbleu
       config:
         threshold: 0.1
-
-    - type: python
-      value: file:///app/assertions/tikz_crystalbleu_from_scitikzer.py
-      metric: crystalbleu_scitikzer
-      config:
-        threshold: 0.1
+        crystalbleu_corpus: /crystalbleu_corpus
 
     - type: python
       value: file:///app/assertions/tikz_ted.py
       metric: ted_similarity
-      config:
-        threshold: 0.5
-
-    - type: python
-      value: file:///app/assertions/tikz_ted_from_scitikzer.py
-      metric: ted_similarity_scitikzer
       config:
         threshold: 0.5
 
@@ -77,12 +76,6 @@ defaultTest:
       metric: siglip_similarity
       config:
         threshold: 0.6
-
-    - type: python
-      value: file:///app/assertions/image_siglip_cc.py
-      metric: siglip_cc
-      config:
-        threshold: 0.7
 
     - type: python
       value: file:///app/assertions/image_lpips.py

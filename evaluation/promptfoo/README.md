@@ -157,7 +157,7 @@ docker run --rm -it \
   -v "/home/jonas/models:/models" \
   -p 15500:15500 \
   promptfoo-tex \
-  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_detikzify_2_5_8b.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"
+  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_geotikzbridge-8b.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"
   ```
 
 
