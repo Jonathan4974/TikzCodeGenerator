@@ -1,4 +1,4 @@
-docker build -t geotikzbridge-base-8b-cuda128 .
+docker build -t geotikzbridge-8b-cuda128 .
 
 docker run --rm -it \
   --gpus all \
@@ -6,4 +6,4 @@ docker run --rm -it \
   -v "$PWD:/app" \
   -v "/home/jonas/models:/models/" \
   -p 8007:8007 \
-  geotikzbridge-base-8b-cuda128
+  geotikzbridge-8b-cuda128
