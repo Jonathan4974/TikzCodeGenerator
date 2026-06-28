@@ -8,8 +8,9 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://host.docker.internal:11434/api/chat")
-DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:e2b-it-qat")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
+DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:31b-it-qat")
+IMAGE_BASE_PATH = Path("/usr/prakt/s0030/projects/data/benchmark_data/images")
 
 app = FastAPI()
 
@@ -22,11 +23,13 @@ class RequestBody(BaseModel):
 
 def image_to_base64(path: str) -> str:
     path = Path(path)
+    filename = path.name
+    image_path = IMAGE_BASE_PATH / filename
 
-    if not path.exists():
-        raise FileNotFoundError(f"Image not found: {path}")
+    if not image_path.exists():
+        raise FileNotFoundError(f"Image not found: {image_path}")
 
-    return base64.b64encode(path.read_bytes()).decode("utf-8")
+    return base64.b64encode(image_path.read_bytes()).decode("utf-8")
 
 
 @app.post("/generate", response_class=PlainTextResponse)
