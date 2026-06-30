@@ -118,8 +118,18 @@ def normalize_canvas(path, size=384, upscale=True):
     canvas.alpha_composite(img, ((size - nw) // 2, (size - nh) // 2))
     canvas.convert("RGB").save(path)
 
+def clean_markdown_tex(tex_code: str) -> str:
+    if not tex_code:
+        return ""
+    
+    tex_code = re.sub(r'^\s*```[a-zA-Z]*\s*\n?', '', tex_code, flags=re.IGNORECASE)
+    tex_code = re.sub(r'\n?\s*```\s*$', '', tex_code)
+
+    return tex_code.strip()
 
 def render_tex_to_png(tex_code, output_path, metrics=None):
+    tex_code = clean_markdown_tex(tex_code)
+
     if metrics is None:
         metrics = {}
 
