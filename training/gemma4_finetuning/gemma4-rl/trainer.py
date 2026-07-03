@@ -1,15 +1,18 @@
 from trl import GRPOConfig, GRPOTrainer
 from unsloth import FastVisionModel
 
-from rewards import TikZRewards
+from rewards import TikZReward
+from tb_callback import RewardTensorBoardCallback
 
 
 class GemmaGRPOTrainer:
-    def __init__(self, cfg, model, tokenizer, train_dataset):
+    def __init__(self, cfg, model, tokenizer, train_dataset, val_dataset=None):
         self.cfg = cfg
         self.model = model
         self.tokenizer = tokenizer
         self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+        self.reward_fn = TikZReward(self.cfg)
 
     def build_training_args(self):
         return GRPOConfig(
@@ -37,7 +40,9 @@ class GemmaGRPOTrainer:
             save_steps=self.cfg.save_steps,
             max_grad_norm=0.1,
 
-            report_to="none",
+            report_to="tensorboard",
+            logging_dir=f"{self.cfg.output_dir}/logs",
+
             remove_unused_columns=False,
 
             importance_sampling_level="sequence",
@@ -52,11 +57,15 @@ class GemmaGRPOTrainer:
             model=self.model,
             args=self.build_training_args(),
             processing_class=self.tokenizer,
-            reward_funcs=[
-                TikZRewards.formatting_reward_func,
-                TikZRewards.correctness_reward_func,
-            ],
+            reward_funcs=[self.reward_fn],
             train_dataset=self.train_dataset,
+            callbacks=[
+                RewardTensorBoardCallback(
+                    reward_fn=self.reward_fn,
+                    log_dir=f"{self.cfg.output_dir}/logs",
+                    every_n_steps=self.cfg.log_reward_every,
+                )
+            ],
         )
 
         trainer.train()

@@ -1,116 +1,88 @@
 import re
-import difflib
+
+from reward_functions.render_reward import is_renderable
+from reward_functions.diagnostic_reward import diagnostic_reward_func
+from reward_functions.visual_reward import visual_reward_func
+from reward_functions.code_reward import code_reward_func
 
 
-class TikZRewards:
-    BAD_PHRASES = [
-        "here is",
-        "the code",
-        "explanation",
-        "i will",
-        "sure",
-        "dieser code",
-    ]
+def clean_code(completion) -> str:
+    if isinstance(completion, list):
+        completion = completion[0]["content"] if completion else ""
 
-    IMPORTANT_TOKENS = [
-        "\\draw",
-        "\\node",
-        "\\path",
-        "\\fill",
-        "\\coordinate",
-        "\\matrix",
-        "\\usetikzlibrary",
-        "\\begin{axis}",
-        "\\addplot",
-    ]
+    if isinstance(completion, dict):
+        completion = completion.get("content", "")
 
-    @staticmethod
-    def completion_to_text(completion):
-        if isinstance(completion, str):
-            return completion
+    code = str(completion).strip()
 
-        if isinstance(completion, list):
-            return "\n".join(TikZRewards.completion_to_text(x) for x in completion)
+    return code.strip()
 
-        if isinstance(completion, dict):
-            return TikZRewards.completion_to_text(completion.get("content", ""))
 
-        return str(completion)
+def pick(values, idx):
+    if isinstance(values, list):
+        return values[idx]
+    return values
 
-    @staticmethod
-    def clean_code(x):
-        text = TikZRewards.completion_to_text(x).strip()
 
-        text = re.sub(r"```(?:latex|tex)?", "", text)
-        text = text.replace("```", "")
+class TikZReward:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.__name__ = "tikz_reward"
+        self.last_sample = None
 
-        return text.strip()
-
-    @staticmethod
-    def formatting_reward_func(completions, **kwargs):
+    def __call__(self, completions, answer=None, image=None, images=None, **kwargs):
         scores = []
 
-        for completion in completions:
-            raw = TikZRewards.completion_to_text(completion)
-            code = TikZRewards.clean_code(raw)
+        input_images = image or images or kwargs.get("image") or kwargs.get("images")
+        reference_codes = answer or kwargs.get("answer")
 
-            score = 0.0
+        for i, completion in enumerate(completions):
+            gen_code = clean_code(completion)
+            ref_code = pick(reference_codes, i)
+            input_image = pick(input_images, i)
 
-            if "\\documentclass" in code:
-                score += 0.4
-            if "\\begin{document}" in code:
-                score += 0.3
-            if "\\end{document}" in code:
-                score += 0.3
+            render = is_renderable(gen_code)
 
-            if "\\begin{tikzpicture}" in code:
-                score += 0.5
-            if "\\end{tikzpicture}" in code:
-                score += 0.5
+            if not render.ok:
+                score = float(self.cfg.not_renderable_score)
+                scores.append(score)
+                continue
 
-            if "```" not in raw:
-                score += 0.3
+            diag = diagnostic_reward_func(
+                cfg=self.cfg,
+                errors=render.errors,
+                warnings=render.warnings,
+                badboxes=render.badboxes,
+            )
 
-            if not any(word in code.lower()[:300] for word in TikZRewards.BAD_PHRASES):
-                score += 0.3
+            visual = visual_reward_func(
+                cfg=self.cfg,
+                input_image=input_image,
+                rendered_image=render.image,
+            )
 
-            if len(code) > 200:
-                score += 0.2
+            score = self.cfg.renderable_score
+            score += diag.score
+            score += self.cfg.visual_reward_multiplier * visual.score
 
-            if code.count("{") == code.count("}"):
-                score += 0.3
+            code = None
+            if visual.score >= self.cfg.visual_threshold:
+                code = code_reward_func(
+                    generated_code=gen_code,
+                    reference_code=ref_code,
+                    cfg=self.cfg,
+                )
+                score += code.score
 
-            scores.append(score)
+            score = float(score)
 
-        return scores
-
-    @staticmethod
-    def correctness_reward_func(prompts, completions, answer, **kwargs):
-        scores = []
-
-        for completion, ref in zip(completions, answer):
-            pred = TikZRewards.clean_code(completion)
-            ref = TikZRewards.clean_code(ref)
-
-            similarity = difflib.SequenceMatcher(
-                None,
-                pred[:5000],
-                ref[:5000],
-            ).ratio()
-
-            score = similarity * 1.5
-
-            hits = 0
-            possible = 0
-
-            for token in TikZRewards.IMPORTANT_TOKENS:
-                if token in ref:
-                    possible += 1
-                    if token in pred:
-                        hits += 1
-
-            if possible > 0:
-                score += hits / possible
+            self.last_sample = {
+                "score": score,
+                "input_image": input_image,
+                "generated_image": render.image,
+                "generated_code": gen_code,
+                "reference_code": ref_code,
+            }
 
             scores.append(score)
 

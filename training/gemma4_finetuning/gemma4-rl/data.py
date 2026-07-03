@@ -7,11 +7,12 @@ from torch.utils.data import Dataset
 INSTRUCTION = """Take this image and write the LaTeX/TikZ code for it.
 
 VLM description:
-{vlm_description}
+__VLM_DESCRIPTION__
 
 Return only complete compilable LaTeX code.
 Do not explain anything.
 Do not use Markdown.
+Stop immediately after \\end{document}.
 """
 
 
@@ -47,8 +48,9 @@ class DaTikZDataset(Dataset):
         tikz_code = code_path.read_text(encoding="utf-8")
         vlm_description = vlm_description_path.read_text(encoding="utf-8").strip()
 
-        text_content = INSTRUCTION.format(
-            vlm_description=vlm_description
+        text_content = INSTRUCTION.replace(
+            "__VLM_DESCRIPTION__",
+            vlm_description,
         )
 
         prompt = [

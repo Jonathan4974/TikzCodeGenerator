@@ -18,6 +18,7 @@ class GemmaSFTTrainer:
             gradient_accumulation_steps=self.cfg.gradient_accumulation_steps,
 
             learning_rate=self.cfg.learning_rate,
+            num_train_epochs=cfg.epochs,
             max_steps=self.cfg.max_steps,
             save_steps=self.cfg.save_steps,
 
@@ -53,6 +54,7 @@ class GemmaSFTTrainer:
                 max_seq_length=self.cfg.max_seq_length,
             ),
             train_dataset=self.train_dataset,
+            eval_dataset=self.train_dataset,
         )
 
         trainer.train()

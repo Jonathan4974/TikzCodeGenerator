@@ -1,22 +1,23 @@
 from dataclasses import dataclass
-
+import os
 
 @dataclass
 class TrainingConfig:
-    model_name: str = "/home/jonas/.cache/huggingface/hub/gemma-4-31B-it-unsloth-bnb-4bit"
-    dataset_path: str = "/home/jonas/Datasets/TikZ/train-big"
+    model_name: str = "/models/huggingface/hub/gemma-4-31B-it-unsloth-bnb-4bit"
+    dataset_path: str = "/data/"
 
     image_column: str = "image_path"
     code_column: str = "code_path"
     vlm_description_column: str = "vlm_description_path"
 
-    output_dir: str = "gemma4_grpo"
-    lora_output_dir: str = "gemma4_grpo_lora"
+    output_dir: str = "/models/gemma4-rl/gemma4_grpo"
+    lora_output_dir: str = "/models/gemma4-rl/gemma4_grpo_lora"
+    log_reward_every: int = 10
 
-    max_seq_length: int = 16384
-    image_size: int = 448
+    max_seq_length: int = 4096
+    image_size: int = int(os.getenv("REF_IMAGE_SIZE"))
 
-    lora_rank: int = 16
+    lora_rank: int = 8
     seed: int = 3407
 
     # Zum Testen klein lassen
@@ -31,4 +32,37 @@ class TrainingConfig:
     num_generations: int = 2
 
     max_prompt_length: int = 512
-    max_completion_length: int = 1024
+    max_completion_length: int = 4096
+
+
+
+
+    # reward stuff
+    crystalbleu_corpus_dir: str = "/data/code_corpus"
+    crystalbleu_k: int = 500
+    crystalbleu_n: int = 4
+    crystalbleu_use_cache: bool = True
+
+    crystalbleu_weight: float = 1.0
+    ted_weight: float = 0.5
+    ted_scale: float = 100.0
+
+    visual_threshold: float = 0.7
+
+
+    # reward_scores
+    not_renderable_score = -2.0
+    renderable_score = 1.0
+    visual_reward_multiplier = 2.0
+    
+    # diagnostic reward calc
+    error_multiplier = 0.10
+    warning_multiplier = 0.05
+    badboxes_multiplier = 0.01
+    diagnostic_base_max_score = 1.0
+    diagnostic_base_min_score = -2.0
+    
+    # visual reward calc
+    siglip_multiplier = 0.25
+    lpips_multiplier = 0.35
+    dreamsim_multiplier = 0.4
