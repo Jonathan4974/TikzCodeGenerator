@@ -1,10 +1,10 @@
 import os
 import torch
 
-from config import TrainingConfig
-from data import DaTikZDataset
-from model_loader import GemmaVisionModelLoader
-from trainer import GemmaGRPOTrainer
+from .config import TrainingConfig
+from .data import DaTikZDataset
+from .model_loader import GemmaVisionModelLoader
+from .trainer import GemmaSFTTrainer
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     model_loader = GemmaVisionModelLoader(cfg)
     model, tokenizer = model_loader.load()
 
-    trainer = GemmaGRPOTrainer(
+    trainer = GemmaSFTTrainer(
         cfg=cfg,
         model=model,
         tokenizer=tokenizer,

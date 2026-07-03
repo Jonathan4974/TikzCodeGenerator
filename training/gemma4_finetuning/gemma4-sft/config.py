@@ -19,16 +19,13 @@ class TrainingConfig:
     lora_rank: int = 16
     seed: int = 3407
 
-    # Zum Testen klein lassen
     num_examples: int | None = 10
 
-    learning_rate: float = 5e-6
+    learning_rate: float = 2e-4
     max_steps: int = 60
     save_steps: int = 60
 
     per_device_train_batch_size: int = 1
-    gradient_accumulation_steps: int = 2
-    num_generations: int = 2
+    gradient_accumulation_steps: int = 4
 
-    max_prompt_length: int = 512
-    max_completion_length: int = 1024
+    

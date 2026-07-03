@@ -1,7 +1,7 @@
 from trl import GRPOConfig, GRPOTrainer
 from unsloth import FastVisionModel
 
-from .rewards import TikZRewards
+from rewards import TikZRewards
 
 
 class GemmaGRPOTrainer:
@@ -15,7 +15,7 @@ class GemmaGRPOTrainer:
         return GRPOConfig(
             output_dir=self.cfg.output_dir,
 
-            learning_rate=5e-6,
+            learning_rate=self.cfg.learning_rate,
             adam_beta1=0.9,
             adam_beta2=0.99,
             weight_decay=0.1,

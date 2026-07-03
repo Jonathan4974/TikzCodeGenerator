@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -25,14 +26,14 @@ class DaTikZDataset(Dataset):
             self.rows = list(csv.DictReader(f))
 
         if cfg.num_examples is not None:
-            self.rows = self.rows[:cfg.num_examples]
+            self.rows = self.rows[: cfg.num_examples]
 
     def __len__(self):
         return len(self.rows)
 
-    def _path(self, p):
-        p = Path(p)
-        return p if p.is_absolute() else self.root / p
+    def _path(self, value):
+        path = Path(value)
+        return path if path.is_absolute() else self.root / path
 
     def __getitem__(self, idx):
         row = self.rows[idx]
@@ -47,22 +48,24 @@ class DaTikZDataset(Dataset):
         tikz_code = code_path.read_text(encoding="utf-8")
         vlm_description = vlm_description_path.read_text(encoding="utf-8").strip()
 
-        text_content = INSTRUCTION.format(
+        instruction = INSTRUCTION.format(
             vlm_description=vlm_description
         )
 
-        prompt = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": text_content},
-                ],
-            }
-        ]
-
         return {
-            "prompt": prompt,
-            "image": image,
-            "answer": tikz_code,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "image": image},
+                        {"type": "text", "text": instruction},
+                    ],
+                },
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": tikz_code},
+                    ],
+                },
+            ]
         }
