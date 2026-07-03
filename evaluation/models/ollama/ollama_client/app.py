@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:31b-it-qat")
-IMAGE_BASE_PATH = Path("/usr/prakt/s0030/projects/data/benchmark_data/images")
+IMAGE_BASE_PATH = Path("/images")
 
 app = FastAPI()
 

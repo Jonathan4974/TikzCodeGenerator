@@ -1,4 +1,4 @@
-description: image to tikz code using gemma4:31b-it-qat
+description: image to tikz code using gemma4:e2b-it-qat
 
 
 prompts:
@@ -11,7 +11,7 @@ prompts:
     Do not add explanations.
 
 providers:
-  - id: http://127.0.0.1:8444/generate
+  - id: http://host.docker.internal:8444/generate
     label: ollama-fastapi
     config:
       method: POST
@@ -21,7 +21,7 @@ providers:
       body:
         prompt: "{{prompt}}"
         image: "{{reference_image}}"
-        model: "gemma4:31b-it-qat"
+        model: "gemma4:e2b-it-qat"
 
 defaultTest:
   vars:
