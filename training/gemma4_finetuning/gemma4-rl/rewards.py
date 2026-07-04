@@ -36,6 +36,8 @@ def pick(values, idx):
     if values is None:
         return None
     if isinstance(values, list):
+        if len(values) == 0:
+            return None
         return values[idx % len(values)]
     return values
 
@@ -78,7 +80,6 @@ class TikZReward:
         return {k: v for k, v in metrics.items() if v is not None}
 
     def __call__(self, completions, answer=None, image=None, images=None, **kwargs):
-        print("Start calculating the reward")
         scores = []
         records = []
         examples = []
@@ -164,27 +165,30 @@ class TikZReward:
                 visual_score = 0.0
                 record["visual_score"] = 0.0
 
+            code_score = 0.0
+
+            try:
+                code = code_reward_func(
+                    generated_code=gen_code,
+                    reference_code=ref_code,
+                    cfg=self.cfg,
+                )
+
+                code_score = float(code.score)
+
+                record["code_evaluated"] = 1.0
+                record["code_score"] = code_score
+                record["crystalbleu"] = float(code.crystalbleu)
+                record["ted"] = float(code.ted)
+
+            except Exception:
+                record["code_evaluated"] = 0.0
+                record["code_score"] = 0.0
+
             score = self.cfg.renderable_score
             score += diag.score
+            score += self.cfg.code_reward_multiplier * code_score
             score += self.cfg.visual_reward_multiplier * visual_score
-
-            if visual_score >= self.cfg.visual_threshold:
-                try:
-                    code = code_reward_func(
-                        generated_code=gen_code,
-                        reference_code=ref_code,
-                        cfg=self.cfg,
-                    )
-
-                    record["code_evaluated"] = 1.0
-                    record["code_score"] = float(code.score)
-                    record["crystalbleu"] = float(code.crystalbleu)
-                    record["ted"] = float(code.ted)
-
-                    score += code.score
-
-                except Exception:
-                    pass
 
             score = float(score)
             record["total_score"] = score

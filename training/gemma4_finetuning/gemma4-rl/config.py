@@ -23,8 +23,8 @@ class TrainingConfig:
     num_examples: int | None = 10
 
     learning_rate: float = 5e-6
-    max_steps: int = 60
-    save_steps: int = 60
+    max_steps: int = 10
+    save_steps: int = 10
 
     per_device_train_batch_size: int = 1
     gradient_accumulation_steps: int = 2
@@ -52,13 +52,12 @@ class TrainingConfig:
     ted_weight: float = 0.5
     ted_scale: float = 100.0
 
-    visual_threshold: float = 0.8
-
 
     # reward_scores
     not_renderable_score = -2.0
     renderable_score = 1.0
-    visual_reward_multiplier = 2.0
+    code_reward_multiplier = 3.0
+    visual_reward_multiplier = 0.5
     
     # diagnostic reward calc
     error_multiplier = 0.10
