@@ -36,6 +36,6 @@ RUN python -m pip install --no-cache-dir -U \
     pillow numpy scipy scikit-learn scikit-image pandas pyarrow \
     torchmetrics lpips dreamsim crystalbleu pygments sacremoses \
     pymupdf protobuf sentencepiece huggingface_hub hf_transfer nltk \
-    tensorboard
+    tensorboard tensorflow
 
 CMD ["bash"]

@@ -13,3 +13,7 @@ docker run --rm -it \
   -v "/home/jonas/PycharmProjects/tikzcodegenerator/evaluation/promptfoo/pf_utils:/pf_utils" \
   gemma4-finetune \
   bash
+
+
+
+tensorboard --logdir /models/gemma4-rl/gemma4_grpo/ --host 0.0.0.0 --port 6006

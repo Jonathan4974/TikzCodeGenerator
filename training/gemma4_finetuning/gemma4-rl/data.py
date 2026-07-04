@@ -67,4 +67,5 @@ class DaTikZDataset(Dataset):
             "prompt": prompt,
             "image": image,
             "answer": tikz_code,
+            "image_path": str(image_path),
         }

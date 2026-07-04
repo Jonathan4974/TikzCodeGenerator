@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 
 from reward_functions.render_reward import is_renderable
 from reward_functions.diagnostic_reward import diagnostic_reward_func
@@ -19,8 +20,10 @@ def clean_code(completion) -> str:
 
 
 def pick(values, idx):
+    if values is None:
+        return None
     if isinstance(values, list):
-        return values[idx]
+        return values[idx % len(values)]
     return values
 
 
@@ -28,7 +31,6 @@ class TikZReward:
     def __init__(self, cfg):
         self.cfg = cfg
         self.__name__ = "tikz_reward"
-        self.last_sample = None
 
     def __call__(self, completions, answer=None, image=None, images=None, **kwargs):
         scores = []
@@ -65,7 +67,6 @@ class TikZReward:
             score += diag.score
             score += self.cfg.visual_reward_multiplier * visual.score
 
-            code = None
             if visual.score >= self.cfg.visual_threshold:
                 code = code_reward_func(
                     generated_code=gen_code,
@@ -76,13 +77,6 @@ class TikZReward:
 
             score = float(score)
 
-            self.last_sample = {
-                "score": score,
-                "input_image": input_image,
-                "generated_image": render.image,
-                "generated_code": gen_code,
-                "reference_code": ref_code,
-            }
 
             scores.append(score)
 

@@ -12,7 +12,7 @@ class TrainingConfig:
 
     output_dir: str = "/models/gemma4-rl/gemma4_grpo"
     lora_output_dir: str = "/models/gemma4-rl/gemma4_grpo_lora"
-    log_reward_every: int = 10
+    log_reward_every: int = 1
 
     max_seq_length: int = 4096
     image_size: int = int(os.getenv("REF_IMAGE_SIZE"))

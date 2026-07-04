@@ -2,7 +2,7 @@ from trl import GRPOConfig, GRPOTrainer
 from unsloth import FastVisionModel
 
 from rewards import TikZReward
-from tb_callback import RewardTensorBoardCallback
+from tb_callback import TensorBoardNumberCallback
 
 
 class GemmaGRPOTrainer:
@@ -26,9 +26,6 @@ class GemmaGRPOTrainer:
             lr_scheduler_type="cosine",
             optim="adamw_8bit",
 
-            logging_steps=1,
-            log_completions=False,
-
             per_device_train_batch_size=self.cfg.per_device_train_batch_size,
             gradient_accumulation_steps=self.cfg.gradient_accumulation_steps,
             num_generations=self.cfg.num_generations,
@@ -42,6 +39,10 @@ class GemmaGRPOTrainer:
 
             report_to="tensorboard",
             logging_dir=f"{self.cfg.output_dir}/logs",
+            logging_strategy="steps",
+            logging_steps=1,
+            log_completions=False,
+            logging_first_step = True,
 
             remove_unused_columns=False,
 
@@ -60,11 +61,7 @@ class GemmaGRPOTrainer:
             reward_funcs=[self.reward_fn],
             train_dataset=self.train_dataset,
             callbacks=[
-                RewardTensorBoardCallback(
-                    reward_fn=self.reward_fn,
-                    log_dir=f"{self.cfg.output_dir}/logs",
-                    every_n_steps=self.cfg.log_reward_every,
-                )
+                TensorBoardNumberCallback(f"{self.cfg.output_dir}/logs")
             ],
         )
 
