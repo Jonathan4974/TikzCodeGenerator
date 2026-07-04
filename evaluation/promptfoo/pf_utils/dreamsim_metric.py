@@ -178,6 +178,55 @@ class DreamSim(Metric):
 
 
 
+_DREAMSIM_METRIC = None
+_DREAMSIM_KEY = None
+
+
+def choose_dtype(device: str):
+    if device == "cuda":
+        if torch.cuda.is_bf16_supported():
+            return torch.bfloat16
+        return torch.float16
+
+    # CPU / XPU / NPU sicherer erstmal fp32
+    return torch.float32
+
+
+def get_dreamsim_metric(
+    model_name: str = "ensemble",
+    pretrained: bool = True,
+    normalize: bool = True,
+    preprocess: bool = True,
+    device: str | None = None,
+):
+    global _DREAMSIM_METRIC, _DREAMSIM_KEY
+
+    if device is None:
+        device = infer_device()
+
+    dtype = choose_dtype(device)
+
+    key = (model_name, pretrained, normalize, preprocess, device, dtype)
+
+    if _DREAMSIM_METRIC is None or _DREAMSIM_KEY != key:
+        metric = DreamSim(
+            model_name=model_name,
+            pretrained=pretrained,
+            normalize=normalize,
+            preprocess=preprocess,
+            device=device,
+            dtype=dtype,
+        )
+
+        metric = metric.to(device)
+        metric.eval()
+
+        _DREAMSIM_METRIC = metric
+        _DREAMSIM_KEY = key
+
+    return _DREAMSIM_METRIC
+
+
 def compute_dreamsim_score(
     image_a,
     image_b,
@@ -185,17 +234,23 @@ def compute_dreamsim_score(
     pretrained: bool = True,
     normalize: bool = True,
     preprocess: bool = True,
+    device: str | None = None,
 ):
-    metric = DreamSim(
+    metric = get_dreamsim_metric(
         model_name=model_name,
         pretrained=pretrained,
         normalize=normalize,
         preprocess=preprocess,
+        device=device,
     )
 
-    metric.update(
-        img1=image_a,
-        img2=image_b,
-    )
+    metric.reset()
 
-    return float(metric.compute())
+    with torch.inference_mode():
+        metric.update(
+            img1=image_a,
+            img2=image_b,
+        )
+        score = metric.compute()
+
+    return float(score)

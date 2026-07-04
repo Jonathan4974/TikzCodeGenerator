@@ -46,7 +46,7 @@ class GemmaGRPOTrainer:
 
             remove_unused_columns=False,
 
-            importance_sampling_level="sequence",
+            importance_sampling_level="token",
             mask_truncated_completions=False,
             loss_type="dr_grpo",
         )
@@ -61,7 +61,8 @@ class GemmaGRPOTrainer:
             reward_funcs=[self.reward_fn],
             train_dataset=self.train_dataset,
             callbacks=[
-                TensorBoardNumberCallback(f"{self.cfg.output_dir}/logs")
+                TensorBoardNumberCallback(f"{self.cfg.output_dir}/logs",
+                                          reward_fn=self.reward_fn)
             ],
         )
 

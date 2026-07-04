@@ -16,4 +16,4 @@ docker run --rm -it \
 
 
 
-tensorboard --logdir /models/gemma4-rl/gemma4_grpo/ --host 0.0.0.0 --port 6006
+tensorboard --logdir /home/jonas/models/gemma4-rl/gemma4_grpo --host 0.0.0.0 --port 6006

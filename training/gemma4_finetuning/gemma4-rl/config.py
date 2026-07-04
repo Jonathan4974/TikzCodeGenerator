@@ -12,12 +12,11 @@ class TrainingConfig:
 
     output_dir: str = "/models/gemma4-rl/gemma4_grpo"
     lora_output_dir: str = "/models/gemma4-rl/gemma4_grpo_lora"
-    log_reward_every: int = 1
-
+    
     max_seq_length: int = 4096
-    image_size: int = int(os.getenv("REF_IMAGE_SIZE"))
+    image_size: int = int(os.getenv("REF_IMAGE_SIZE", "384"))
 
-    lora_rank: int = 8
+    lora_rank: int = 4
     seed: int = 3407
 
     # Zum Testen klein lassen
@@ -32,7 +31,13 @@ class TrainingConfig:
     num_generations: int = 2
 
     max_prompt_length: int = 512
-    max_completion_length: int = 4096
+    max_completion_length: int = 2048
+
+
+    #logging
+    log_examples_every: int = 1
+    log_examples_max: int = 2
+    max_logged_code_chars: int = 8000
 
 
 
@@ -47,7 +52,7 @@ class TrainingConfig:
     ted_weight: float = 0.5
     ted_scale: float = 100.0
 
-    visual_threshold: float = 0.7
+    visual_threshold: float = 0.8
 
 
     # reward_scores
@@ -63,6 +68,6 @@ class TrainingConfig:
     diagnostic_base_min_score = -2.0
     
     # visual reward calc
-    siglip_multiplier = 0.25
-    lpips_multiplier = 0.35
-    dreamsim_multiplier = 0.4
+    siglip_multiplier = 0.15
+    lpips_multiplier = 0.5
+    dreamsim_multiplier = 0.35
