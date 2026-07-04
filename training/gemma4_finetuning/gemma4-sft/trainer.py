@@ -18,27 +18,26 @@ class GemmaSFTTrainer:
             gradient_accumulation_steps=self.cfg.gradient_accumulation_steps,
 
             learning_rate=self.cfg.learning_rate,
-            num_train_epochs=cfg.epochs,
+            num_train_epochs=self.cfg.epochs,
             max_steps=self.cfg.max_steps,
             save_steps=self.cfg.save_steps,
 
-            logging_steps=1,
             optim="adamw_8bit",
             weight_decay=0.01,
             lr_scheduler_type="linear",
             warmup_steps=5,
 
             seed=self.cfg.seed,
-            report_to="none",
 
             remove_unused_columns=False,
-
-            # Wichtig für VLMs: keine harte TRL-Truncation,
-            # sonst können Image-Tokens abgeschnitten werden.
             max_length=None,
-
-            # Verhindert unnötige Dataset-Vorverarbeitung.
             dataset_kwargs={"skip_prepare_dataset": True},
+
+            report_to="tensorboard",
+            logging_dir=f"{self.cfg.output_dir}/logs",
+            logging_strategy="steps",
+            logging_steps=1,
+            logging_first_step=True,
         )
 
     def train(self):
@@ -52,6 +51,9 @@ class GemmaSFTTrainer:
                 self.model,
                 self.tokenizer,
                 max_seq_length=self.cfg.max_seq_length,
+                train_on_responses_only=True,
+                instruction_part="<|turn>user\n",
+                response_part="<|turn>model\n",
             ),
             train_dataset=self.train_dataset,
             eval_dataset=self.train_dataset,

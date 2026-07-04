@@ -13,8 +13,8 @@ class TrainingConfig:
     output_dir: str = "/models/gemma4-sft/gemma4_grpo"
     lora_output_dir: str = "/models/gemma4-sft/gemma4_grpo_lora"
 
-    max_seq_length: int = 4048
-    image_size: int = int(os.getenv("REF_IMAGE_SIZE"))
+    max_seq_length: int = 4096
+    image_size: int = int(os.getenv("REF_IMAGE_SIZE", "512"))
 
 
     lora_rank: int = 8
@@ -23,11 +23,11 @@ class TrainingConfig:
     num_examples: int | None = 10
 
     learning_rate: float = 2e-4
-    epochs = 2
-    max_steps: int = 60
+    epochs: int = 100
+    max_steps: int = -1
     save_steps: int = 60
 
-    per_device_train_batch_size: int = 1
+    per_device_train_batch_size: int = 2
     gradient_accumulation_steps: int = 4
 
     

@@ -13,6 +13,14 @@ class GemmaVisionModelLoader:
             fast_inference=False,
         )
 
+        already_has_lora = hasattr(model, "peft_config") and len(model.peft_config) > 0
+
+        if already_has_lora:
+            print("Loaded SFT LoRA adapter. Continuing RL training from existing adapter.")
+            return model, tokenizer
+
+        print("Loaded base model. Adding new LoRA adapter.")
+
         model = FastVisionModel.get_peft_model(
             model,
             finetune_vision_layers=False,

@@ -3,7 +3,7 @@ import os
 
 @dataclass
 class TrainingConfig:
-    model_name: str = "/models/huggingface/hub/gemma-4-31B-it-unsloth-bnb-4bit"
+    model_name: str = "/models/gemma4-sft/gemma4_grpo_lora"
     dataset_path: str = "/data/"
 
     image_column: str = "image_path"
@@ -14,9 +14,9 @@ class TrainingConfig:
     lora_output_dir: str = "/models/gemma4-rl/gemma4_grpo_lora"
     
     max_seq_length: int = 4096
-    image_size: int = int(os.getenv("REF_IMAGE_SIZE", "384"))
+    image_size: int = int(os.getenv("REF_IMAGE_SIZE", "512"))
 
-    lora_rank: int = 4
+    lora_rank: int = 8
     seed: int = 3407
 
     # Zum Testen klein lassen
@@ -31,7 +31,7 @@ class TrainingConfig:
     num_generations: int = 2
 
     max_prompt_length: int = 512
-    max_completion_length: int = 2048
+    max_completion_length: int = 4096
 
 
     #logging
