@@ -22,6 +22,7 @@ nvidia-smi
 I9_USER="${I9_USER:-s0031}"
 PRAKT_DIR="/usr/prakt/$I9_USER"
 PROJECT="$PRAKT_DIR/projects/tikzcodegenerator"
+ENV_FILE="$PROJECT/training/sketch_agent/.env"
 
 ENV_NAME="sketch-agent"
 CONDA_SH="$PRAKT_DIR/miniconda3/etc/profile.d/conda.sh"
@@ -36,6 +37,11 @@ export TORCH_HOME="$MODEL_STORE/torch"
 export DREAMSIM_CACHE_DIR="$MODEL_STORE/dreamsim"
 
 export PYTHONPATH="$PROJECT:${PYTHONPATH:-}"
+
+if [[ -f "$ENV_FILE" ]]; then
+  HF_TOKEN="$(grep -E '^HF_TOKEN=' "$ENV_FILE" | tail -n1 | cut -d= -f2-)"
+  export HF_TOKEN
+fi
 
 source "$CONDA_SH"
 

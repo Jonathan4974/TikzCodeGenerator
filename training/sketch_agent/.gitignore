@@ -1,4 +1,5 @@
 __pycache__
 # local run/test output folders
+output/
 output_smoke/*
 output_smoke_eval/*

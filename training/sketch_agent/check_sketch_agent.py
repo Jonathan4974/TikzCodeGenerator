@@ -36,14 +36,21 @@ def main() -> None:
     pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
         cfg.base_model, controlnet=controlnet, torch_dtype=torch.bfloat16
     )
-    pipe.load_lora_weights(cfg.lora_output_dir)
+    pipe.unet.load_lora_adapter(cfg.lora_output_dir, prefix=None, use_safetensors=True)
     pipe.to("cuda")
 
+    size = (cfg.image_size, cfg.image_size)
     for sketch_path, target_path in TEST_PAIRS:
-        sketch = Image.open(sketch_path).convert("RGB")
-        target = Image.open(target_path).convert("RGB")
+        sketch = Image.open(sketch_path).convert("RGB").resize(size)
+        target = Image.open(target_path).convert("RGB").resize(size)
 
-        generated = pipe(prompt=cfg.training_prompt, image=to_canny(sketch), num_inference_steps=30).images[0]
+        generated = pipe(
+            prompt=cfg.training_prompt,
+            image=to_canny(sketch),
+            num_inference_steps=30,
+            height=cfg.image_size,
+            width=cfg.image_size,
+        ).images[0]
         pred_path = Path(f"/tmp/sketch_agent_pred_{sketch_path.stem}.png")
         generated.save(pred_path)
 

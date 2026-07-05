@@ -190,13 +190,19 @@ class SketchAgentTrainer:
         preview_dir = Path(self.cfg.output_dir) / "eval_previews" / f"step_{step:06d}"
         preview_dir.mkdir(parents=True, exist_ok=True)
 
+        size = (self.cfg.image_size, self.cfg.image_size)
         scores: dict[str, list[float]] = {metric: [] for metric in self.cfg.eval_metrics}
         for i, pair in enumerate(self.eval_pairs[: self.cfg.eval_sample_size]):
-            sketch = Image.open(pair.input_path).convert("RGB")
-            target = Image.open(pair.target_path).convert("RGB")
-            generated = self.eval_pipeline(
-                prompt=self.cfg.training_prompt, image=self._to_canny(sketch), num_inference_steps=20
-            ).images[0]
+            sketch = Image.open(pair.input_path).convert("RGB").resize(size)
+            target = Image.open(pair.target_path).convert("RGB").resize(size)
+            with self.accelerator.autocast():
+                generated = self.eval_pipeline(
+                    prompt=self.cfg.training_prompt,
+                    image=self._to_canny(sketch),
+                    num_inference_steps=20,
+                    height=self.cfg.image_size,
+                    width=self.cfg.image_size,
+                ).images[0]
             pred_path = preview_dir / f"{i}.png"
             generated.save(pred_path)
 
@@ -253,6 +259,5 @@ class SketchAgentTrainer:
             if self._time_limit_reached():
                 self._save_checkpoint(step)
                 self._save_lora_export(step)
-                break
-
-        self._maybe_self_resubmit()
+                self._maybe_self_resubmit()
+                return

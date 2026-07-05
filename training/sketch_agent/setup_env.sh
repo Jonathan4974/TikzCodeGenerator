@@ -42,7 +42,9 @@ conda run -n "$ENV_NAME" pip install \
   pillow \
   scipy \
   sentencepiece \
-  protobuf
+  protobuf \
+  pymupdf \
+  requests
 
 echo "Checking setup..."
 
