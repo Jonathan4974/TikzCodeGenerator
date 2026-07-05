@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
     container_name: ollama-client
     ports:
-      - "8004:8004"
+      - "8444:8444"
     environment:
       OLLAMA_URL: http://ollama:11434/api/chat
     volumes:

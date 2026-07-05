@@ -1,27 +1,37 @@
-description: image to tikz code using gemma4:e2b-it-qat
-
+description: image to tikz code using finetuned gemma4
 
 prompts:
-  - |
-    As a LaTeX graphics expert, translate the image into TikZ code suitable for academic publications. 
-    Focus on recreating geometric precision, typographic elements, and color schemes. 
-    The code must be compilable, efficient, and maintain the original image's visual fidelity for professional document integration.
-    Return only the full LaTeX document.
-    Do not use markdown fences.
-    Do not add explanations.
+  - "image-to-tikz"
 
 providers:
-  - id: http://host.docker.internal:8444/generate
-    label: ollama-fastapi
+  - id: http
+    label: finetuned gemma4
     config:
+      url: http://host.docker.internal:8000/tikz
       method: POST
-      timeout: 900000
-      headers:
-        Content-Type: application/json
-      body:
-        prompt: "{{prompt}}"
-        image: "{{reference_image}}"
-        model: "gemma4:e2b-it-qat"
+      multipart:
+        parts:
+          - kind: file
+            name: image
+            filename: input.png
+            contentType: image/png
+            source:
+              type: path
+              path: "file://{{reference_image}}"
+
+          - kind: field
+            name: vlm_description
+            value: "{{vlm_description}}"
+
+          - kind: field
+            name: temperature
+            value: "0.2"
+
+          - kind: field
+            name: top_p
+            value: "0.9"
+
+      transformResponse: json.tikz
 
 defaultTest:
   vars:
