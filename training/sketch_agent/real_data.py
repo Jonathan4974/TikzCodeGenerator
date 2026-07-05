@@ -4,38 +4,11 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import List, Optional
 
 import numpy as np
-from PIL import Image
 
 from .data import SyntheticPair
-
-
-def load_real_pairs(data_dir: str | Path) -> List[SyntheticPair]:
-    root = Path(data_dir)
-    if not root.exists():
-        return []
-
-    sketch_dir = root / "sketches"
-    target_dir = root / "targets"
-    if not sketch_dir.exists() or not target_dir.exists():
-        return []
-
-    pairs: List[SyntheticPair] = []
-    for sketch_path in sorted(sketch_dir.glob("*.png")):
-        stem = sketch_path.stem
-        target_path = target_dir / f"{stem}_target.png"
-        if target_path.exists():
-            pairs.append(
-                SyntheticPair(
-                    input_path=sketch_path,
-                    target_path=target_path,
-                    source_name=stem,
-                    method="real_data",
-                )
-            )
-    return pairs
 
 
 @dataclass
@@ -50,24 +23,17 @@ def _safe_stem(uri: Optional[str], index: int) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "_", uri).strip("_")[:80] or f"sketchfig_{index:04d}"
 
 
-def _default_sketchfig_loader(dataset_name: str, split: str) -> Any:
-    from datasets import load_dataset
-
-    return load_dataset(dataset_name, split=split)
-
-
 def load_sketchfig_dataset(
     cache_dir: str | Path,
     train_fraction: float = 0.0,
     seed: int = 3407,
     dataset_name: str = "nllg/sketchfig",
     split: str = "train",
-    dataset_loader: Optional[Callable[[], Any]] = None,
 ) -> SketchFigSplit:
-    """Load SketchFig
-    """
-    loader = dataset_loader or (lambda: _default_sketchfig_loader(dataset_name, split))
-    ds = loader()
+    """Load SketchFig, splitting into a train slice and an eval-only holdout."""
+    from datasets import load_dataset
+
+    ds = load_dataset(dataset_name, split=split)
 
     cache_root = Path(cache_dir)
     train_dir = cache_root / "train"

@@ -1,28 +1,34 @@
 import json
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 from PIL import Image
 
 from training.sketch_agent.data import generate_synthetic_pairs, load_synthetic_dataset
 from training.sketch_agent.real_data import load_sketchfig_dataset
-from training.sketch_agent.ultrasketch_methods import (
-    DryRunUltraSketchPipe,
-    assert_multiple_of,
-    random_displacement_field,
-    resize_to_multiple,
-)
+from training.sketch_agent.ultrasketch_methods import assert_multiple_of, random_displacement_field, resize_to_multiple
 
 
 def _solid_image(size: int = 64, color=(120, 140, 160)) -> Image.Image:
     return Image.new("RGB", (size, size), color=color)
 
 
-def _fake_render_source(n: int, start_index: int = 0, size: int = 64):
+def _fake_datikz_renders(n: int, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0, size: int = 64):
     for offset in range(n):
         idx = start_index + offset
         yield f"fake_{idx:03d}", _solid_image(size, color=(idx % 255, 10, 20))
+
+
+class _FakeUltraSketchPipe:
+    """Stand-in with the same call interface as the real diffusers pipeline, used only
+    in tests so `run_ultrasketch`'s resize/assert plumbing can be tested without a GPU."""
+
+    def __call__(self, prompt, image, mask_img=None, **kwargs):
+        sketch = image.convert("L").point(lambda value: 255 if value > 220 else 0).convert("RGB")
+        return SimpleNamespace(images=[sketch])
 
 
 def test_resize_to_multiple_rounds_down_and_is_idempotent():
@@ -34,8 +40,6 @@ def test_resize_to_multiple_rounds_down_and_is_idempotent():
 
 
 def _gradient_image(size: int = 64) -> Image.Image:
-    # A non-uniform image is required: a solid color looks identical after any warp,
-    # regardless of seed, since every sampled neighborhood has the same value.
     y, x = np.meshgrid(np.arange(size), np.arange(size), indexing="ij")
     array = np.stack([(x * 4) % 256, (y * 4) % 256, ((x + y) * 2) % 256], axis=-1).astype(np.uint8)
     return Image.fromarray(array)
@@ -53,17 +57,12 @@ def test_random_displacement_field_is_deterministic_per_seed():
 
 
 def test_generate_synthetic_pairs_assigns_methods_matching_rng_draws():
-    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
+    ), patch("training.sketch_agent.data.load_ultrasketch_pipeline", return_value=_FakeUltraSketchPipe()):
         seed = 7
         num_samples = 6
-        pairs = generate_synthetic_pairs(
-            tmp,
-            num_samples=num_samples,
-            seed=seed,
-            render_source=_fake_render_source,
-            ultrasketch_probability=0.5,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
+        pairs = generate_synthetic_pairs(tmp, num_samples=num_samples, seed=seed, ultrasketch_probability=0.5)
 
         assert len(pairs) == num_samples
 
@@ -85,53 +84,34 @@ def test_generate_synthetic_pairs_assigns_methods_matching_rng_draws():
 
 
 def test_generate_synthetic_pairs_probability_zero_is_all_displacement():
-    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp:
-        pairs = generate_synthetic_pairs(
-            tmp,
-            num_samples=3,
-            seed=1,
-            render_source=_fake_render_source,
-            ultrasketch_probability=0.0,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
+    ), patch("training.sketch_agent.data.load_ultrasketch_pipeline", return_value=_FakeUltraSketchPipe()):
+        pairs = generate_synthetic_pairs(tmp, num_samples=3, seed=1, ultrasketch_probability=0.0)
         assert all(pair.method == "displacement" for pair in pairs)
 
 
 def test_generate_synthetic_pairs_probability_one_uses_stub_only():
-    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp:
-        pairs = generate_synthetic_pairs(
-            tmp,
-            num_samples=3,
-            seed=1,
-            render_source=_fake_render_source,
-            ultrasketch_probability=1.0,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
+    ), patch("training.sketch_agent.data.load_ultrasketch_pipeline", return_value=_FakeUltraSketchPipe()):
+        pairs = generate_synthetic_pairs(tmp, num_samples=3, seed=1, ultrasketch_probability=1.0)
         assert all(pair.method == "ultrasketch" for pair in pairs)
 
 
 def test_generate_synthetic_pairs_is_incremental():
-    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.load_ultrasketch_pipeline", return_value=_FakeUltraSketchPipe()
+    ):
         calls = []
 
-        def counting_render_source(n: int, start_index: int):
+        def counting_render_source(n, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0):
             calls.append((n, start_index))
-            return _fake_render_source(n, start_index)
+            return _fake_datikz_renders(n, start_index=start_index)
 
-        generate_synthetic_pairs(
-            tmp,
-            num_samples=2,
-            seed=5,
-            render_source=counting_render_source,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
-        pairs = generate_synthetic_pairs(
-            tmp,
-            num_samples=5,
-            seed=5,
-            render_source=counting_render_source,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
+        with patch("training.sketch_agent.data.iter_datikz_renders", side_effect=counting_render_source):
+            generate_synthetic_pairs(tmp, num_samples=2, seed=5)
+            pairs = generate_synthetic_pairs(tmp, num_samples=5, seed=5)
 
         assert calls == [(2, 0), (3, 2)]
         assert len(pairs) == 5
@@ -142,15 +122,10 @@ def test_generate_synthetic_pairs_is_incremental():
 
 
 def test_load_synthetic_dataset_reports_real_method_per_pair():
-    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp:
-        generate_synthetic_pairs(
-            tmp,
-            num_samples=4,
-            seed=9,
-            render_source=_fake_render_source,
-            ultrasketch_probability=0.5,
-            ultrasketch_pipe_factory=lambda: DryRunUltraSketchPipe(),
-        )
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
+    ), patch("training.sketch_agent.data.load_ultrasketch_pipeline", return_value=_FakeUltraSketchPipe()):
+        generate_synthetic_pairs(tmp, num_samples=4, seed=9, ultrasketch_probability=0.5)
         reloaded = load_synthetic_dataset(tmp)
         assert len(reloaded) == 4
         assert all(pair.method in {"ultrasketch", "displacement"} for pair in reloaded)
@@ -183,7 +158,8 @@ def _fake_sketchfig_rows(num_rows: int = 10):
 def test_load_sketchfig_dataset_default_holds_out_everything_for_eval():
     with tempfile.TemporaryDirectory(prefix="sketch-agent-sketchfig-") as tmp:
         rows = _fake_sketchfig_rows(10)
-        split = load_sketchfig_dataset(tmp, dataset_loader=lambda: rows)
+        with patch("datasets.load_dataset", return_value=rows):
+            split = load_sketchfig_dataset(tmp)
 
         assert len(split.train) == 0
         assert len(split.eval) == 10
@@ -195,8 +171,9 @@ def test_load_sketchfig_dataset_default_holds_out_everything_for_eval():
 def test_load_sketchfig_dataset_split_is_reproducible_and_disjoint():
     with tempfile.TemporaryDirectory(prefix="sketch-agent-sketchfig-") as tmp:
         rows = _fake_sketchfig_rows(20)
-        split_a = load_sketchfig_dataset(tmp + "/a", train_fraction=0.3, seed=11, dataset_loader=lambda: rows)
-        split_b = load_sketchfig_dataset(tmp + "/b", train_fraction=0.3, seed=11, dataset_loader=lambda: rows)
+        with patch("datasets.load_dataset", return_value=rows):
+            split_a = load_sketchfig_dataset(tmp + "/a", train_fraction=0.3, seed=11)
+            split_b = load_sketchfig_dataset(tmp + "/b", train_fraction=0.3, seed=11)
 
         train_sources_a = {pair.source_name for pair in split_a.train}
         eval_sources_a = {pair.source_name for pair in split_a.eval}

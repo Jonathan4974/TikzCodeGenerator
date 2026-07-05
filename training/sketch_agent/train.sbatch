@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="ultrasketch_test"
+#SBATCH --job-name="sketch_agent_train"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1,VRAM:24G
@@ -7,21 +7,41 @@
 #SBATCH --time=0-08:00:00
 #SBATCH --partition=PRACT
 #SBATCH --qos=practical_course
+#SBATCH --nodelist=node9
 #SBATCH --exclude=node1,node7
 #SBATCH --mail-type=ALL
 #SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/slurm-%j.out
 
-export HF_HOME=/usr/prakt/s0031/projects/models/huggingface
+set -euo pipefail
 
-cd /usr/prakt/s0031/projects/tikzcodegenerator
+echo "Job started on $(hostname)"
+pwd
+date
+nvidia-smi
 
-python3 -m training.sketch_agent.train \
-  --output-dir training/sketch_agent/output \
-  --checkpoint-dir training/sketch_agent/output/checkpoints \
-  --synthetic-dir training/sketch_agent/output/synthetic_pairs \
-  --max-steps 8 \
-  --checkpoint-interval-steps 2 \
-  --synthetic-samples 8 \
-  --image-size 256 \
-  --seed 3407 \
-  --self-resubmit
+I9_USER="${I9_USER:-s0031}"
+PRAKT_DIR="/usr/prakt/$I9_USER"
+PROJECT="$PRAKT_DIR/projects/tikzcodegenerator"
+
+ENV_NAME="sketch-agent"
+CONDA_SH="$PRAKT_DIR/miniconda3/etc/profile.d/conda.sh"
+
+MODEL_STORE="$PRAKT_DIR/projects/models"
+export HF_HOME="$MODEL_STORE/huggingface"
+export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
+export HF_HUB_CACHE="$HF_HOME/hub"
+export TRANSFORMERS_CACHE="$HF_HOME/transformers"
+export HF_DATASETS_CACHE="$HF_HOME/datasets"
+export TORCH_HOME="$MODEL_STORE/torch"
+export DREAMSIM_CACHE_DIR="$MODEL_STORE/dreamsim"
+
+export PYTHONPATH="$PROJECT:${PYTHONPATH:-}"
+
+source "$CONDA_SH"
+
+cd "$PROJECT"
+
+conda run -n "$ENV_NAME" python -m training.sketch_agent.train
+
+echo "Job finished."
+date

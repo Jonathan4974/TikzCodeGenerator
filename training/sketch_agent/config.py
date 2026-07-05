@@ -6,36 +6,62 @@ from typing import Any, Optional, Tuple
 
 @dataclass
 class SketchAgentConfig:
-    """Configuration for the sketch-agent training basic implementation"""
+    """Configuration for the sketch-agent SDXL+ControlNet+LoRA training pipeline"""
 
+    # paths
     output_dir: str = "training/sketch_agent/output"
     checkpoint_dir: str = "training/sketch_agent/output/checkpoints"
+    lora_output_dir: str = "training/sketch_agent/output/lora"
     synthetic_dir: str = "training/sketch_agent/output/synthetic_pairs"
-    checkpoint_interval_steps: int = 2
-    max_steps: int = 8
-    batch_size: int = 1
-    image_size: int = 256
-    seed: int = 3407
-    synthetic_samples: int = 8
-    dry_run: bool = True
+    sketchfig_cache_dir: str = "training/sketch_agent/output/sketchfig_cache"
+
+    # models
     base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
     controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
     controlnet_alt_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
+    vae_model: str = "madebyollin/sdxl-vae-fp16-fix"
+
+    # LoRA / optimization
+    lora_rank: int = 16
+    lora_alpha: int = 16
+    lora_dropout: float = 0.0
+    learning_rate: float = 1e-4
+    mixed_precision: str = "bf16"
+
+    # training loop
+    batch_size: int = 1
+    gradient_accumulation_steps: int = 4
+    image_size: int = 512
+    max_steps: int = 5000
+    checkpoint_interval_steps: int = 200
+    time_limit_hours: float = 7.5
+    dataloader_num_workers: int = 2
+    seed: int = 3407
+
+    # SDXL cross-attention prompt + ControlNet canny prep
+    training_prompt: str = "a clean technical line drawing"
+    canny_low_threshold: int = 100
+    canny_high_threshold: int = 200
+    controlnet_conditioning_scale: float = 1.0
+
+    # data sourcing
+    synthetic_samples: int = 1500
     ultrasketch_probability: float = 0.5
     displacement_alpha: float = 6.0
     displacement_sigma: float = 12.0
     datikz_dataset_name: str = "nllg/DaTikZ-V4"
     datikz_split: str = "train"
     datikz_streaming: bool = True
-    use_sketchfig: bool = False
-    sketchfig_cache_dir: str = "training/sketch_agent/output/sketchfig_cache"
-    sketchfig_train_fraction: float = 0.0
+    use_sketchfig: bool = True
+    sketchfig_dataset_name: str = "nllg/sketchfig"
+    sketchfig_train_fraction: float = 0.25
     sketchfig_split_seed: int = 3407
-    eval_metrics: Tuple[str, ...] = ("pixel_cc",)
-    self_resubmit: bool = False
+    eval_sample_size: int = 6
+    eval_metrics: Tuple[str, ...] = ("pixel_cc", "siglip", "dreamsim")
+
+    # cluster / resume
+    self_resubmit: bool = True
     sbatch_script: Optional[str] = None
-    real_data_dir: Optional[str] = None
-    use_real_data: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

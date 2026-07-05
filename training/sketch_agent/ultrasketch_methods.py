@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -102,23 +102,3 @@ def load_ultrasketch_pipeline() -> Any:
     )
     pipe.to("cuda")
     return pipe
-
-
-class DryRunUltraSketchPipe:
-    """Stand-in for the real diffusers pipeline with an identical call interface.
-
-    Returns a simple PIL transform instead of running a real diffusion
-    model, so `run_ultrasketch`'s resize/assert plumbing can be exercised in tests
-    and local runs without network access or a GPU.
-    """
-
-    def __call__(self, prompt: str, image: Image.Image, mask_img: Optional[Image.Image] = None, **kwargs: Any):
-        from types import SimpleNamespace
-
-        sketch = image.convert("L")
-        sketch = sketch.point(lambda value: 255 if value > 220 else 0)
-        sketch = sketch.convert("RGB")
-        return SimpleNamespace(images=[sketch])
-
-
-PipeFactory = Callable[[], Any]
