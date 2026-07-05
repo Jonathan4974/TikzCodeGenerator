@@ -1,4 +1,4 @@
-description: image to tikz code using gemma4:e2b-it-qat
+description: image to tikz code using qwen3.6:27b
 
 
 prompts:
@@ -21,7 +21,7 @@ providers:
       body:
         prompt: "{{prompt}}"
         image: "{{reference_image}}"
-        model: "gemma4:e2b-it-qat"
+        model: "qwen3.6:27b"
 
 defaultTest:
   vars:
@@ -35,68 +35,68 @@ defaultTest:
 
   assert:
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_structural_similarity.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_structural_similarity.py
       metric: image_ssim
       config:
         threshold: 0.75
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_is_renderable.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_is_renderable.py
       metric: renderable
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_crystalbleu.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_crystalbleu.py
       metric: crystalbleu
       config:
         threshold: 0.1
-        crystalbleu_corpus: /usr/prakt/s0030/projects/data/benchmark_data/benchmark_corpus
+        crystalbleu_corpus: /usr/prakt/s0042/projects/data/benchmark_data/references
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_ted.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_ted.py
       metric: ted_similarity
       config:
         threshold: 0.5
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_clip_similarity.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_clip_similarity.py
       metric: clip_similarity
       config:
         threshold: 0.6
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_siglip_similarity.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_siglip_similarity.py
       metric: siglip_similarity
       config:
         threshold: 0.6
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_lpips.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_lpips.py
       metric: lpips_similarity
       config:
         threshold: 0.8
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_dreamsim.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_dreamsim.py
       metric: dreamsim_similarity
       config:
         threshold: 0.75
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_dists.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_dists.py
       metric: dists_distance
       config:
         threshold: 0.8
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_relative_length_output_reference.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/tikz_relative_length_output_reference.py
       metric: relative_length_error
       config:
         threshold: 0.8
 
     - type: python
-      value: file:///usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_ms_structual_similarity.py
+      value: file:///usr/prakt/s0042/projects/tikzcodegenerator/evaluation/promptfoo/assertions/image_ms_structual_similarity.py
       metric: ms-ssim
       config:
         threshold: 0.75
 
-tests: file:///usr/prakt/s0030/projects/data/benchmark_data/image_manifest.csv
+tests: file:///usr/prakt/s0042/projects/data/benchmark_data/image_manifest.csv

@@ -50,7 +50,7 @@ RUN pip install \
     safetensors \
     transformers==4.53.2 \
     huggingface_hub \
-    hf_transfer \
+    hf_transfer
 
 RUN pip install \
     fastapi \
