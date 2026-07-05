@@ -1,5 +1,10 @@
 # UltraSketch Audit
 
+> **Correction:** the "combined hybrid" pixel-blend
+> conclusion below is wrong - it should be done like in `training/sketch_agent/` where it 
+> uses per-sample random selection between UltraSketch and the displacement field, not blending
+> the two
+
 ## Overview
 - Source: nllg/ultrasketch (HuggingFace)
 - Date audited: 31-05-2026
