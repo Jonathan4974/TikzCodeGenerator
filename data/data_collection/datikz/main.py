@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+import os
 from argparse import ArgumentParser
 from datetime import datetime
 from os.path import abspath
 from multiprocessing import set_start_method
 import random
 import sys
+import yaml
 
 from datasets import disable_caching, load_dataset
 import numpy.random
@@ -19,6 +21,10 @@ TEST_EXCLUDE = {
     "https://arxiv.org/abs/2310.00367"  # contains AutomaTikZ generated tikzpictures
     "https://arxiv.org/abs/2405.15306"  # contains DeTikZify generated tikzpictures
 }
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CFG_PATH = os.path.join(SCRIPT_DIR, "..", "collection_config.yaml")
+_global_config = yaml.safe_load(open(CFG_PATH, "r"))
 
 tokenize = MosesTokenizer().tokenize
 
@@ -105,8 +111,15 @@ if __name__ == "__main__":
     pymupdf.TOOLS.mupdf_display_errors(False)
     args = parse_args()
     sys.argv = sys.argv[:1] # FIXME: ugly workaround to prevent svg2tikz from consuming script args
-    datikz = load_dataset("datikz", split="train", trust_remote_code=True, **vars(args))
-    train, test = train_test_split(datikz)
+    print(f"loading dataset with args:{vars(args)}")
+    datikz = load_dataset("datikz/datikz.py", split="train", trust_remote_code=True, **vars(args))
+    if datikz:
+        print(f"successfully load datikz with {datikz.num_rows} rows")
 
-    train.to_parquet("datikz-train.parquet", compression="GZIP") # type: ignore
-    test.to_parquet("datikz-test.parquet", compression="GZIP") # type: ignore
+    test_size = _global_config.get("test_split_size", 1000)
+    train, test = train_test_split(dataset=datikz, test_size=test_size)
+
+    base_dir = _global_config.get("base_dir", "/usr/prakt/s0042/projects/data/arxiv_TikZ_dataset/2510_2603")
+    train.to_parquet(f"{base_dir}/datikz-train.parquet", compression="GZIP") # type: ignore
+    test.to_parquet(f"{base_dir}/datikz-test.parquet", compression="GZIP") # type: ignore
+

@@ -1,0 +1,7 @@
+# config for data collection
+
+base_dir: "/usr/prakt/s0042/projects/data/arxiv_TikZ_dataset/2510_2603"
+cutoff_date: "2025-10-01" # keep the format
+exclude_date: ["2604", "2605", "2606", "2607"]
+num_worker: 2
+test_split_size: 1000

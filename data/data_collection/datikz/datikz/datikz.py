@@ -220,10 +220,18 @@ class TikZ(builder.GeneratorBasedBuilder):
         return example
 
     def _compile(self, ex):
-        output = tex2img(ex["code"], size=self.config.size) # type: ignore
-        ex["image"] = {"path": None, "bytes": output['image']}
-        ex["pdf"] = output['pdf']
-        return ex
+        # output = tex2img(ex["code"], size=self.config.size) # type: ignore
+        # ex["image"] = {"path": None, "bytes": output['image']}
+        # ex["pdf"] = output['pdf']
+        # return ex
+        try:
+            output = tex2img(ex["code"], size=self.config.size) # type: ignore
+            ex["image"] = {"path": None, "bytes": output['image']}
+            ex["pdf"] = output['pdf']
+            return ex
+        except Exception as e:
+            print(f"Compiling failed with error: {e}, skip this example")
+            return None
 
     def _generate_examples(self, datasets):
         all_tikz, generators = set(), self.config.generators # type: ignore
@@ -240,8 +248,15 @@ class TikZ(builder.GeneratorBasedBuilder):
             nonlocal skipped
             while True:
                 try:
-                    yield next(loader)
-                except (ValueError, PDFPageCountError, TimeoutExpired, CalledProcessError, EmptyFileError):
+                    # yield next(loader)
+                    example = next(loader)
+                    # if _compile returns None
+                    if example is None:
+                        skipped += 1
+                        continue
+                    
+                    yield example
+                except (ValueError, PDFPageCountError, TimeoutExpired, CalledProcessError, EmptyFileError,AttributeError):
                     skipped += 1
                 except StopIteration:
                     break

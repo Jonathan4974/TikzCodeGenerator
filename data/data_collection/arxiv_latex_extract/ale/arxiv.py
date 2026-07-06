@@ -7,6 +7,9 @@ from os.path import join
 from shutil import rmtree
 from threading import TIMEOUT_MAX
 from typing import List
+import time
+from botocore.exceptions import ConnectionClosedError
+from botocore.config import Config
 
 import internetarchive as ia
 
@@ -73,8 +76,15 @@ class S3Downloader(BaseDownloader):
 
     @property
     def _s3resource(self):
+        config = Config(
+            retries={
+                'max_attempts': 10,
+                'mode': 'adaptive'
+            }
+        )
         return boto3.resource(
             "s3",  # the AWS resource we want to use
+            config=config,
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
             region_name="us-east-1",  # same region arxiv bucket is in
@@ -111,12 +121,30 @@ class S3Downloader(BaseDownloader):
             print(f"Downloading {identifier} ({index})...")
 
         makedirs(target_dir, exist_ok=True)
-        self._s3resource.meta.client.download_file( # type: ignore
-            Bucket='arxiv',
-            Key=join("src", src_file),
-            Filename=join(target_dir, src_file),
-            ExtraArgs={'RequestPayer': 'requester'}
-       )
+
+        for attempt in range(10):
+            try:
+                self._s3resource.meta.client.download_file( # type: ignore
+                    Bucket='arxiv',
+                    Key=join("src", src_file),
+                    Filename=join(target_dir, src_file),
+                    ExtraArgs={'RequestPayer': 'requester'}
+                )
+                break
+
+            except Exception as e:
+                print(f"Download failed ({attempt+1}/10): {e}")
+
+                if attempt == 9:
+                    raise
+
+                time.sleep(30)
+    #     self._s3resource.meta.client.download_file( # type: ignore
+    #         Bucket='arxiv',
+    #         Key=join("src", src_file),
+    #         Filename=join(target_dir, src_file),
+    #         ExtraArgs={'RequestPayer': 'requester'}
+    #    )
 
         if verbose:
             print(f"Finished downloading {identifier} ({index}).")
@@ -128,7 +156,10 @@ def download(*args, **kwargs):
     arxiv, s3 = ArchiveDownloader(), S3Downloader()
 
     yield from arxiv.download(*args, **kwargs)
-    yield from s3.download(*args, exclude=arxiv.items, **kwargs)
+
+    user_exclude = kwargs.pop('exclude', [])
+    combined_exclude = set(user_exclude) | set(arxiv.items)
+    yield from s3.download(*args, exclude=combined_exclude, **kwargs)
 
 def delete(path):
     if path.startswith(ARCHIVE_DIR):
