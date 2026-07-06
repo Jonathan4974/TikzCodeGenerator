@@ -4,11 +4,12 @@ from unsloth.trainer import UnslothVisionDataCollator
 
 
 class GemmaSFTTrainer:
-    def __init__(self, cfg, model, tokenizer, train_dataset):
+    def __init__(self, cfg, model, tokenizer, train_dataset, eval_dataset):
         self.cfg = cfg
         self.model = model
         self.tokenizer = tokenizer
         self.train_dataset = train_dataset
+        self.eval_dataset = eval_dataset
 
     def build_args(self):
         return SFTConfig(
@@ -21,6 +22,9 @@ class GemmaSFTTrainer:
             num_train_epochs=self.cfg.epochs,
             max_steps=self.cfg.max_steps,
             save_steps=self.cfg.save_steps,
+
+            eval_strategy="steps",
+            eval_steps=self.cfg.eval_steps,
 
             optim="adamw_8bit",
             weight_decay=0.01,
@@ -56,7 +60,7 @@ class GemmaSFTTrainer:
                 response_part="<|turn>model\n",
             ),
             train_dataset=self.train_dataset,
-            eval_dataset=self.train_dataset,
+            eval_dataset=self.eval_dataset,
         )
 
         trainer.train()

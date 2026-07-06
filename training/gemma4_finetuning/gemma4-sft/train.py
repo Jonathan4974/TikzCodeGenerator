@@ -13,7 +13,8 @@ def main():
     cfg = TrainingConfig()
     torch.manual_seed(cfg.seed)
 
-    train_dataset = DaTikZDataset(cfg)
+    train_dataset = DaTikZDataset(cfg, cfg.train_manifest)
+    val_dataset = DaTikZDataset(cfg, cfg.val_manifest)
 
     model_loader = GemmaVisionModelLoader(cfg)
     model, tokenizer = model_loader.load()
@@ -23,6 +24,7 @@ def main():
         model=model,
         tokenizer=tokenizer,
         train_dataset=train_dataset,
+        eval_dataset=val_dataset,
     )
 
     trainer.train()

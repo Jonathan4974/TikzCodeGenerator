@@ -7,7 +7,6 @@ from torch.utils.data import Dataset
 
 INSTRUCTION = """Take this image and write the LaTeX/TikZ code for it.
 
-VLM description:
 __VLM_DESCRIPTION__
 
 Return only complete compilable LaTeX code.
@@ -18,10 +17,10 @@ Stop immediately after \\end{document}.
 
 
 class DaTikZDataset(Dataset):
-    def __init__(self, cfg):
+    def __init__(self, cfg, manifest_name: str):
         self.cfg = cfg
         self.root = Path(cfg.dataset_path)
-        self.manifest = self.root / "manifest.csv"
+        self.manifest = self.root / manifest_name
 
         with open(self.manifest, newline="", encoding="utf-8") as f:
             self.rows = list(csv.DictReader(f))
@@ -49,9 +48,14 @@ class DaTikZDataset(Dataset):
         tikz_code = code_path.read_text(encoding="utf-8")
         vlm_description = vlm_description_path.read_text(encoding="utf-8").strip()
 
+        if vlm_description:
+            vlm_description_block = f"VLM description:\n{vlm_description}"
+        else:
+            vlm_description_block = ""
+
         text_content = INSTRUCTION.replace(
             "__VLM_DESCRIPTION__",
-            vlm_description,
+            vlm_description_block,
         )
 
         return {
