@@ -33,6 +33,10 @@ class GemmaGRPOTrainer:
             max_prompt_length=self.cfg.max_prompt_length,
             max_completion_length=self.cfg.max_completion_length,
 
+            temperature=0.2,
+            top_p=0.9,
+            repetition_penalty=1.05,
+
             max_steps=self.cfg.max_steps,
             save_steps=self.cfg.save_steps,
             max_grad_norm=0.1,

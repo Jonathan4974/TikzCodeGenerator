@@ -38,4 +38,6 @@ RUN python -m pip install --no-cache-dir -U \
     pymupdf protobuf sentencepiece huggingface_hub hf_transfer nltk \
     tensorboard tensorflow
 
+RUN pip install --upgrade transformers 
+
 CMD ["bash"]

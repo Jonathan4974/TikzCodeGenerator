@@ -3,7 +3,7 @@ import os
 
 @dataclass
 class TrainingConfig:
-    model_name: str = "/models/gemma4-sft/gemma4_grpo_lora"
+    model_name: str = "/models/gemma4-sft/gemma4_sft_lora"
     dataset_path: str = "/data/"
 
     image_column: str = "image_path"
@@ -13,31 +13,31 @@ class TrainingConfig:
     output_dir: str = "/models/gemma4-rl/gemma4_grpo"
     lora_output_dir: str = "/models/gemma4-rl/gemma4_grpo_lora"
     
-    max_seq_length: int = 4096
+    max_seq_length: int = 8192
     image_size: int = int(os.getenv("REF_IMAGE_SIZE", "512"))
 
     lora_rank: int = 8
     seed: int = 3407
 
     # Zum Testen klein lassen
-    num_examples: int | None = 10
+    num_examples: int | None = None
 
-    learning_rate: float = 5e-6
-    max_steps: int = 10
-    save_steps: int = 10
+    learning_rate: float = 1e-6
+    max_steps: int = 100
+    save_steps: int = 50
 
     per_device_train_batch_size: int = 1
     gradient_accumulation_steps: int = 2
     num_generations: int = 2
 
-    max_prompt_length: int = 512
+    max_prompt_length: int = 1024
     max_completion_length: int = 4096
 
 
     #logging
     log_examples_every: int = 1
     log_examples_max: int = 2
-    max_logged_code_chars: int = 8000
+    max_logged_code_chars: int = 80000
 
 
 

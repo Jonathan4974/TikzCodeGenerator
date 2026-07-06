@@ -10,12 +10,11 @@ class TrainingConfig:
     code_column: str = "code_path"
     vlm_description_column: str = "vlm_description_path"
 
-    output_dir: str = "/models/gemma4-sft/gemma4_grpo"
-    lora_output_dir: str = "/models/gemma4-sft/gemma4_grpo_lora"
+    output_dir: str = "/models/gemma4-sft/gemma4_sft"
+    lora_output_dir: str = "/models/gemma4-sft/gemma4_sft_lora"
 
-    max_seq_length: int = 4096
+    max_seq_length: int = 8192
     image_size: int = int(os.getenv("REF_IMAGE_SIZE", "512"))
-
 
     lora_rank: int = 8
     seed: int = 3407
@@ -25,9 +24,7 @@ class TrainingConfig:
     learning_rate: float = 2e-4
     epochs: int = 100
     max_steps: int = -1
-    save_steps: int = 60
+    save_steps: int = 20
 
-    per_device_train_batch_size: int = 2
-    gradient_accumulation_steps: int = 4
-
-    
+    per_device_train_batch_size: int = 1
+    gradient_accumulation_steps: int = 10

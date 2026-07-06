@@ -4,16 +4,29 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 
-INSTRUCTION = """Take this image and write the LaTeX/TikZ code for it.
+INSTRUCTION = """Take this image and generate a complete LaTeX TikZ document.
 
-VLM description:
+Visual description:
 __VLM_DESCRIPTION__
 
-Return only complete compilable LaTeX code.
-Do not explain anything.
-Do not use Markdown.
-Stop immediately after \\end{document}.
+Return only LaTeX.
+Start with \\documentclass.
+Stop after \\end{document}.
 """
+
+
+def clean_code(text: str) -> str:
+    text = str(text).strip()
+
+    start = r"\documentclass"
+    if start in text:
+        text = text[text.index(start):]
+
+    end = r"\end{document}"
+    if end in text:
+        text = text[: text.index(end) + len(end)]
+
+    return text.strip()
 
 
 class DaTikZDataset(Dataset):
@@ -43,9 +56,8 @@ class DaTikZDataset(Dataset):
         vlm_description_path = self._path(row[self.cfg.vlm_description_column])
 
         image = Image.open(image_path).convert("RGB")
-        image = image.resize((self.cfg.image_size, self.cfg.image_size))
 
-        tikz_code = code_path.read_text(encoding="utf-8")
+        tikz_code = clean_code(code_path.read_text(encoding="utf-8"))
         vlm_description = vlm_description_path.read_text(encoding="utf-8").strip()
 
         text_content = INSTRUCTION.replace(
@@ -53,15 +65,13 @@ class DaTikZDataset(Dataset):
             vlm_description,
         )
 
-        prompt = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": text_content},
-                ],
-            }
-        ]
+        prompt = (
+            "<bos><|turn>user\n"
+            "<|image|>"
+            f"{text_content}"
+            "<turn|>\n"
+            "<|turn>model\n"
+        )
 
         return {
             "prompt": prompt,

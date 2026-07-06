@@ -7,3 +7,4 @@ unsloth_compiled_cache
 gemma4_grpo
 gemma4_grpo_lora
 __pycache__
+copy-logs.sh
