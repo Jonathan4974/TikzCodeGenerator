@@ -3,8 +3,10 @@ examples and print pixel-CC/SigLIP/DreamSim scores. This is more for eyeballing 
 """
 from __future__ import annotations
 
+import argparse
 import os
 from pathlib import Path
+from typing import Optional
 
 _ENV_FILE = Path(__file__).parent / ".env"
 if _ENV_FILE.exists():
@@ -24,13 +26,13 @@ from PIL import Image, ImageDraw
 from evaluation.promptfoo.pf_utils.clip_siglip_metric import image_cosine_similarity
 from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
+from .checkpoint_utils import resolve_latest_dir
 from .config import SketchAgentConfig
 from .eval import pixel_congruence_coefficient
 
 cfg = SketchAgentConfig()
 
 EVAL_DIR = Path(cfg.sketchfig_cache_dir) / "eval"
-CHECK_PREVIEW_DIR = Path(cfg.output_dir) / "check_previews"
 TEST_PAIRS = [
     (path, EVAL_DIR / path.name.replace("_input", "_target"))
     for path in sorted(EVAL_DIR.glob("*_input.png"))[:3]
@@ -55,14 +57,36 @@ def save_comparison(sketch: Image.Image, generated: Image.Image, target: Image.I
     canvas.save(out_path)
 
 
+def _resolve_lora_dir(lora_dir_arg: Optional[str]) -> Path:
+    if lora_dir_arg is not None:
+        return Path(lora_dir_arg)
+    resolved = resolve_latest_dir(Path(cfg.lora_output_dir), "latest_lora.json")
+    if resolved is None:
+        raise FileNotFoundError(f"no step_* LoRA export found under {cfg.lora_output_dir}")
+    return resolved[0]
+
+
 def main() -> None:
-    CHECK_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--lora-dir",
+        type=str,
+        default=None,
+        help="dir with pytorch_lora_weights.safetensors; defaults to the latest step_* export under cfg.lora_output_dir",
+    )
+    parser.add_argument("--tag", type=str, default=None, help="subfolder under check_previews/; defaults to --lora-dir's basename")
+    args = parser.parse_args()
+
+    lora_dir = _resolve_lora_dir(args.lora_dir)
+    tag = args.tag or lora_dir.name
+    check_preview_dir = Path(cfg.output_dir) / "check_previews" / tag
+    check_preview_dir.mkdir(parents=True, exist_ok=True)
 
     controlnet = ControlNetModel.from_pretrained(cfg.controlnet_model, torch_dtype=torch.bfloat16)
     pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
         cfg.base_model, controlnet=controlnet, torch_dtype=torch.bfloat16
     )
-    pipe.unet.load_lora_adapter(cfg.lora_output_dir, prefix=None, use_safetensors=True)
+    pipe.unet.load_lora_adapter(str(lora_dir), prefix=None, use_safetensors=True)
     pipe.to("cuda")
 
     size = (cfg.image_size, cfg.image_size)
@@ -77,11 +101,11 @@ def main() -> None:
             height=cfg.image_size,
             width=cfg.image_size,
         ).images[0]
-        pred_path = CHECK_PREVIEW_DIR / f"{sketch_path.stem}_pred.png"
+        pred_path = check_preview_dir / f"{sketch_path.stem}_pred.png"
         generated.save(pred_path)
-        sketch.save(CHECK_PREVIEW_DIR / f"{sketch_path.stem}_sketch.png")
-        target.save(CHECK_PREVIEW_DIR / f"{sketch_path.stem}_target.png")
-        comparison_path = CHECK_PREVIEW_DIR / f"{sketch_path.stem}_comparison.png"
+        sketch.save(check_preview_dir / f"{sketch_path.stem}_sketch.png")
+        target.save(check_preview_dir / f"{sketch_path.stem}_target.png")
+        comparison_path = check_preview_dir / f"{sketch_path.stem}_comparison.png"
         save_comparison(sketch, generated, target, comparison_path)
 
         cc = pixel_congruence_coefficient(generated, target)

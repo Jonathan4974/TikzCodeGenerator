@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import time
@@ -20,6 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 from evaluation.promptfoo.pf_utils.clip_siglip_metric import image_cosine_similarity
 from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
+from .checkpoint_utils import resolve_latest_dir, write_latest_manifest
 from .config import SketchAgentConfig
 from .data import SyntheticPair
 from .eval import pixel_congruence_coefficient
@@ -32,22 +32,6 @@ def _resolve_self_resubmit_command(cfg: SketchAgentConfig, is_main_process: bool
         return None
     script = cfg.sbatch_script or str(Path(__file__).with_name("train.sbatch"))
     return ["sbatch", "--dependency=afterany:" + job_id, script]
-
-
-def _resolve_checkpoint_dir(checkpoint_dir: Path) -> Optional[tuple[Path, int]]:
-    """Pick the checkpoint dir to resume from: prefer the latest-manifest pointer,
-    falling back to a numeric sort of step_* directories."""
-    manifest_path = checkpoint_dir / "latest_checkpoint.json"
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        latest = Path(manifest["path"])
-        if latest.exists():
-            return latest, int(manifest["step"])
-
-    dirs = sorted(checkpoint_dir.glob("step_*"), key=lambda path: int(path.name.rsplit("_", 1)[-1]))
-    if not dirs:
-        return None
-    return dirs[-1], int(dirs[-1].name.rsplit("_", 1)[-1])
 
 
 class SketchAgentTrainer:
@@ -156,15 +140,13 @@ class SketchAgentTrainer:
         ckpt_dir = checkpoint_dir / f"step_{step:06d}"
         self.accelerator.save_state(str(ckpt_dir))
         if self.accelerator.is_main_process:
-            (checkpoint_dir / "latest_checkpoint.json").write_text(
-                json.dumps({"step": step, "path": str(ckpt_dir)}), encoding="utf-8"
-            )
+            write_latest_manifest(checkpoint_dir, "latest_checkpoint.json", step, ckpt_dir)
 
     def _load_checkpoint(self) -> int:
         checkpoint_dir = Path(self.cfg.checkpoint_dir)
         if not checkpoint_dir.exists():
             return 0
-        resolved = _resolve_checkpoint_dir(checkpoint_dir)
+        resolved = resolve_latest_dir(checkpoint_dir, "latest_checkpoint.json")
         if resolved is None:
             return 0
         ckpt_dir, step = resolved
@@ -175,8 +157,11 @@ class SketchAgentTrainer:
     def _save_lora_export(self, step: int) -> None:
         if not self.accelerator.is_main_process:
             return
-        self.accelerator.unwrap_model(self.unet).save_lora_adapter(self.cfg.lora_output_dir)
-        print(f"Saved LoRA export at step {step} -> {self.cfg.lora_output_dir}")
+        lora_dir = Path(self.cfg.lora_output_dir)
+        step_dir = lora_dir / f"step_{step:06d}"
+        self.accelerator.unwrap_model(self.unet).save_lora_adapter(str(step_dir))
+        write_latest_manifest(lora_dir, "latest_lora.json", step, step_dir)
+        print(f"Saved LoRA export at step {step} -> {step_dir}")
 
     def _to_canny(self, image: Image.Image) -> Image.Image:
         arr = cv2.Canny(np.array(image.convert("RGB")), self.cfg.canny_low_threshold, self.cfg.canny_high_threshold)
