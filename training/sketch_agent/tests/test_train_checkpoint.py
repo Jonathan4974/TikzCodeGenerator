@@ -1,8 +1,9 @@
 import tempfile
 from pathlib import Path
 
+from training.sketch_agent.checkpoint_utils import resolve_latest_dir
 from training.sketch_agent.config import build_training_config
-from training.sketch_agent.trainer import _resolve_checkpoint_dir, _resolve_self_resubmit_command
+from training.sketch_agent.trainer import _resolve_self_resubmit_command
 
 
 def test_resolve_checkpoint_dir_picks_highest_step_across_double_digits():
@@ -14,7 +15,7 @@ def test_resolve_checkpoint_dir_picks_highest_step_across_double_digits():
             '{"step": 12, "path": "%s"}' % (checkpoint_dir / "step_000012")
         )
 
-        resolved = _resolve_checkpoint_dir(checkpoint_dir)
+        resolved = resolve_latest_dir(checkpoint_dir, "latest_checkpoint.json")
         assert resolved is not None
         assert resolved[1] == 12
 
@@ -26,7 +27,7 @@ def test_resolve_checkpoint_dir_falls_back_to_numeric_sort_without_manifest():
         for step in (2, 8, 10, 12):
             (checkpoint_dir / f"step_{step:06d}").mkdir()
 
-        resolved = _resolve_checkpoint_dir(checkpoint_dir)
+        resolved = resolve_latest_dir(checkpoint_dir, "latest_checkpoint.json")
         assert resolved is not None
         assert resolved[1] == 12
 

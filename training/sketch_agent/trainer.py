@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 from accelerate import Accelerator
 from diffusers import EulerDiscreteScheduler, StableDiffusionXLControlNetPipeline
+from diffusers.optimization import get_scheduler
 from PIL import Image
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -59,7 +60,15 @@ class SketchAgentTrainer:
         )
         params = [p for p in models.unet.parameters() if p.requires_grad]
         optimizer = torch.optim.AdamW(params, lr=cfg.learning_rate)
-        self.unet, self.optimizer, self.dataloader = self.accelerator.prepare(models.unet, optimizer, dataloader)
+        lr_scheduler = get_scheduler(
+            cfg.lr_scheduler_type,
+            optimizer=optimizer,
+            num_warmup_steps=int(cfg.max_steps * cfg.lr_warmup_ratio),
+            num_training_steps=cfg.max_steps,
+        )
+        self.unet, self.optimizer, self.lr_scheduler, self.dataloader = self.accelerator.prepare(
+            models.unet, optimizer, lr_scheduler, dataloader
+        )
 
         self.controlnet = models.controlnet
         self.vae = models.vae
@@ -230,11 +239,13 @@ class SketchAgentTrainer:
                 loss = self._training_step(batch)
                 self.accelerator.backward(loss)
                 self.optimizer.step()
+                self.lr_scheduler.step()
                 self.optimizer.zero_grad()
 
             step += 1
             if self.writer is not None:
                 self.writer.add_scalar("train/loss", loss.item(), step)
+                self.writer.add_scalar("train/lr", self.lr_scheduler.get_last_lr()[0], step)
 
             if step % self.cfg.checkpoint_interval_steps == 0 or step == self.cfg.max_steps:
                 self._save_checkpoint(step)

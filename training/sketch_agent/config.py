@@ -26,13 +26,15 @@ class SketchAgentConfig:
     lora_alpha: int = 16
     lora_dropout: float = 0.0
     learning_rate: float = 1e-4
+    lr_scheduler_type: str = "cosine"
+    lr_warmup_ratio: float = 0.1
     mixed_precision: str = "bf16"
 
     # training loop
     batch_size: int = 1
-    gradient_accumulation_steps: int = 4
+    gradient_accumulation_steps: int = 4 # steps per epoch 1500 (synthetic) + 0.25 * 549 = 1637 -> /4 = 410 steps p epoch 
     image_size: int = 512
-    max_steps: int = 5000
+    max_steps: int = 5000 # total of ~12 epochs
     checkpoint_interval_steps: int = 200
     time_limit_hours: float = 7.5
     dataloader_num_workers: int = 2
