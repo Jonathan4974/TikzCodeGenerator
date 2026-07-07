@@ -3,3 +3,4 @@ __pycache__
 output/
 output_smoke/*
 output_smoke_eval/*
+logs/
