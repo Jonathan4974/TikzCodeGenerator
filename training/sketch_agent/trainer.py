@@ -60,11 +60,13 @@ class SketchAgentTrainer:
         )
         params = [p for p in models.unet.parameters() if p.requires_grad]
         optimizer = torch.optim.AdamW(params, lr=cfg.learning_rate)
+        # AcceleratedScheduler only advances the wrapped scheduler on true gradient sync steps (once per gradient_accumulation_steps)
+        real_steps = max(1, cfg.max_steps // cfg.gradient_accumulation_steps)
         lr_scheduler = get_scheduler(
             cfg.lr_scheduler_type,
             optimizer=optimizer,
-            num_warmup_steps=int(cfg.max_steps * cfg.lr_warmup_ratio),
-            num_training_steps=cfg.max_steps,
+            num_warmup_steps=int(real_steps * cfg.lr_warmup_ratio),
+            num_training_steps=real_steps,
         )
         self.unet, self.optimizer, self.lr_scheduler, self.dataloader = self.accelerator.prepare(
             models.unet, optimizer, lr_scheduler, dataloader
