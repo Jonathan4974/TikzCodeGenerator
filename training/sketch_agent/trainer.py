@@ -20,7 +20,7 @@ from torch.utils.tensorboard import SummaryWriter
 from evaluation.promptfoo.pf_utils.clip_siglip_metric import image_cosine_similarity
 from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
-from .checkpoint_utils import resolve_latest_dir, write_latest_manifest
+from .checkpoint_utils import clear_resumable_state, resolve_latest_dir, resolve_run_name, write_latest_manifest
 from .config import SketchAgentConfig
 from .data import SyntheticPair
 from .eval import pixel_congruence_coefficient
@@ -78,7 +78,11 @@ class SketchAgentTrainer:
         self.prompt_embeds = models.prompt_embeds.to(self.accelerator.device)
         self.pooled_prompt_embeds = models.pooled_prompt_embeds.to(self.accelerator.device)
 
-        self.writer = SummaryWriter(f"{cfg.output_dir}/tensorboard") if self.accelerator.is_main_process else None
+        if self.accelerator.is_main_process:
+            run_name = resolve_run_name(Path(cfg.output_dir), Path(cfg.checkpoint_dir), cfg.run_name)
+            self.writer = SummaryWriter(f"{cfg.output_dir}/tensorboard/{run_name}")
+        else:
+            self.writer = None
 
         self.eval_pipeline = StableDiffusionXLControlNetPipeline(
             vae=self.vae,
@@ -227,6 +231,12 @@ class SketchAgentTrainer:
         subprocess.run(command, check=False)
         return " ".join(command)
 
+    def _cleanup_after_completion(self) -> None:
+        if not self.accelerator.is_main_process:
+            return
+        run_name_file = Path(self.cfg.output_dir) / "current_run_name.txt"
+        clear_resumable_state(Path(self.cfg.checkpoint_dir), run_name_file)
+
     def train(self) -> None:
         step = self._load_checkpoint()
         data_iter = iter(self.dataloader)
@@ -259,3 +269,5 @@ class SketchAgentTrainer:
                 self._save_lora_export(step)
                 self._maybe_self_resubmit()
                 return
+
+        self._cleanup_after_completion()

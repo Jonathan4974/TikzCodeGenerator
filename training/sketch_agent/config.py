@@ -65,6 +65,9 @@ class SketchAgentConfig:
     self_resubmit: bool = True
     sbatch_script: Optional[str] = None
 
+    # observability
+    run_name: Optional[str] = None  # TensorBoard run name; auto-generated (timestamp + job id) if unset
+
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 

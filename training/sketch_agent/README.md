@@ -5,7 +5,7 @@ the Structure/Text Agent
 
 ## Architecture
 - Base: `stabilityai/stable-diffusion-xl-base-1.0`
-- ControlNet: `diffusers/controlnet-canny-sdxl-1.0` (default), `xinsir/controlnet-scribble-sdxl-1.0` (fallback if canny underperforms on real sketches)
+- ControlNet: `diffusers/controlnet-canny-sdxl-1.0` (default), `xinsir/controlnet-scribble-sdxl-1.0` (fallback if canny underperforms)
 - VAE: `madebyollin/sdxl-vae-fp16-fix`
 - LoRA on the UNet's attention projections only (`to_q`/`to_k`/`to_v`/`to_out.0`), rank 16 / alpha 16. Text encoders, ControlNet, VAE stay fully frozen.
 - Text conditioning: a single fixed prompt for every sample (`config.training_prompt`, `"a clean technical line drawing"`)
@@ -33,6 +33,8 @@ the Structure/Text Agent
 ## Additional Notes
 - 8h SLURM job limit; `time_limit_hours` (default 7.5h) leaves a buffer, checkpointing and self-resubmitting (`sbatch --dependency=afterany:$SLURM_JOB_ID train.sbatch`) automatically before hitting it.
 - `HF_HOME` and related HF/torch cache env vars are set in `setup_env.sh`/`train.sbatch`.
+- Each TensorBoard run logs to its own named subdirectory under `output/tensorboard/<run_name>`. A resubmit that resumes from a checkpoint reuses the same run name; otherwise a new run name will created `<timestamp>_job<SLURM_JOB_ID>` by default, or set with `cfg.run_name` to specific name.
+- On job completion (reaching `max_steps`), `trainer.py` deletes `output/checkpoints/` and the run-name file (`checkpoint_utils.clear_resumable_state`)
 
 ## Running
 ```bash
