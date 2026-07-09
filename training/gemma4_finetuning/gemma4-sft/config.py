@@ -24,12 +24,13 @@ class TrainingConfig:
     lora_rank: int = 8
     seed: int = 3407
 
-    num_examples: int | None = None
+    num_examples_train: int | None = 10
+    num_examples_val: int | None = 5
 
     learning_rate: float = 2e-4
     epochs: int = 10
     max_steps: int = -1
-    save_steps: int = 20
+    save_steps: int = 1000
 
     per_device_train_batch_size: int = 1
     gradient_accumulation_steps: int = 10

@@ -25,8 +25,12 @@ class DaTikZDataset(Dataset):
         with open(self.manifest, newline="", encoding="utf-8") as f:
             self.rows = list(csv.DictReader(f))
 
-        if cfg.num_examples is not None:
-            self.rows = self.rows[: cfg.num_examples]
+        if "train" in manifest_name:
+            if cfg.num_examples_train is not None:
+                self.rows = self.rows[: cfg.num_examples_train]
+        elif "val" in manifest_name:
+            if cfg.num_examples_val is not None:
+                self.rows = self.rows[: cfg.num_examples_val]
 
     def __len__(self):
         return len(self.rows)
