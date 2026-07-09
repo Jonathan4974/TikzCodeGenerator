@@ -52,7 +52,7 @@ datasets = [
         "description_col": None,
         "code_col": "response",
         "image_col": "image",  # wird nicht mehr verwendet
-        "sample_percent": 1,
+        "sample_percent": 0,
     },
     {
         "source": "our_dataset",
@@ -60,7 +60,7 @@ datasets = [
         "description_col": None,
         "code_col": "code",
         "image_col": "image",  # wird nicht mehr verwendet
-        "sample_percent": 10,
+        "sample_percent": 1,
     },
 ]
 

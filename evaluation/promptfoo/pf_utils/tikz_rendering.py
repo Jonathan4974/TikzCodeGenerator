@@ -20,15 +20,26 @@ def env_bool(name, default):
 
 
 def run(cmd, cwd):
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    timeout = int(os.getenv("LATEX_TIMEOUT", "60"))
+
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as e:
+        return subprocess.CompletedProcess(
+            cmd,
+            returncode=124,
+            stdout=(e.stdout or "") if isinstance(e.stdout, str) else "",
+            stderr=f"TIMEOUT after {timeout}s",
+        )
 
 
 def count_latex_issues(log_text):
