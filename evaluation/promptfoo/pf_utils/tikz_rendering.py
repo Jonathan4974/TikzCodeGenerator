@@ -58,6 +58,29 @@ def count_latex_issues(log_text):
     }
 
 
+def get_pdf_page_count(pdf_path: Path, cwd: Path) -> int | None:
+    """
+    Gibt die Seitenzahl eines PDFs zurück.
+    Nutzt bevorzugt pdfinfo. Falls nicht vorhanden oder fehlerhaft: None.
+    """
+    if not shutil.which("pdfinfo"):
+        return None
+
+    result = run(["pdfinfo", str(pdf_path)], cwd)
+
+    if result.returncode != 0:
+        return None
+
+    for line in result.stdout.splitlines():
+        if line.startswith("Pages:"):
+            try:
+                return int(line.split(":", 1)[1].strip())
+            except ValueError:
+                return None
+
+    return None
+
+
 def disable_page_numbers(tex):
     if r"\begin{document}" not in tex:
         return tex
@@ -118,16 +141,23 @@ def normalize_canvas(path, size=384, upscale=True):
     canvas.alpha_composite(img, ((size - nw) // 2, (size - nh) // 2))
     canvas.convert("RGB").save(path)
 
+
 def clean_markdown_tex(tex_code: str) -> str:
     if not tex_code:
         return ""
-    
-    tex_code = re.sub(r'^\s*```[a-zA-Z]*\s*\n?', '', tex_code, flags=re.IGNORECASE)
-    tex_code = re.sub(r'\n?\s*```\s*$', '', tex_code)
+
+    tex_code = re.sub(
+        r"^\s*```[a-zA-Z]*\s*\n?",
+        "",
+        tex_code,
+        flags=re.IGNORECASE,
+    )
+    tex_code = re.sub(r"\n?\s*```\s*$", "", tex_code)
 
     return tex_code.strip()
 
-def render_tex_to_png(tex_code, output_path, metrics=None):
+
+def render_tex_to_png(tex_code, output_path, metrics=None, create_ds=False):
     tex_code = clean_markdown_tex(tex_code)
 
     if metrics is None:
@@ -139,8 +169,8 @@ def render_tex_to_png(tex_code, output_path, metrics=None):
         if e.strip()
     ]
 
-    dpi = int(os.getenv("LATEX_DPI", "200"))
-    size = int(os.getenv("REF_IMAGE_SIZE", "384"))
+    dpi = int(os.getenv("LATEX_DPI", "600"))
+    size = int(os.getenv("REF_IMAGE_SIZE", "512"))
 
     crop_pdf = env_bool("LATEX_CROP_PDF", True)
     crop_png_enabled = env_bool("LATEX_CROP_PNG", True)
@@ -194,6 +224,8 @@ def render_tex_to_png(tex_code, output_path, metrics=None):
                     "pdf_created": pdf.exists(),
                     "engine": engine,
                     "halt_on_error": halt,
+                    "pdf_pages": None,
+                    "multipage_rejected": False,
                 }
 
                 last_metrics = attempt_metrics
@@ -206,6 +238,20 @@ def render_tex_to_png(tex_code, output_path, metrics=None):
                 if not pdf.exists():
                     errors.append("No PDF created.")
                     continue
+
+                # ====================================================
+                # DATASET MODE: reject multi-page PDFs
+                # ====================================================
+                if create_ds:
+                    page_count = get_pdf_page_count(pdf, tmp)
+                    attempt_metrics["pdf_pages"] = page_count
+                    metrics["pdf_pages"] = page_count
+
+                    if page_count is not None and page_count != 1:
+                        attempt_metrics["multipage_rejected"] = True
+                        metrics["multipage_rejected"] = True
+                        errors.append(f"Rejected multi-page PDF: pages={page_count}")
+                        continue
 
                 pdf_to_render = pdf
 

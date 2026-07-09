@@ -8,6 +8,7 @@ docker run --rm -it \
   --env-file .env \
   -v "$PWD:/app" \
   -v "/home/jonas/Datasets/TikZ/train-big/:/data" \
+  -v "/home/jonas/Datasets/TikZ/parquet_files/:/parquet_files" \
   -v "/home/jonas/models:/models" \
   -v "/home/jonas/PycharmProjects/tikzcodegenerator/evaluation/promptfoo/pf_utils:/pf_utils" \
   gemma4-finetune \

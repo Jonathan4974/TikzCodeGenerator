@@ -1,0 +1,111 @@
+\documentclass[twoside]{book}
+\usepackage[margin=25mm,
+            bottom= 0mm,%
+            footskip=6\baselineskip,
+            includefoot,
+            showframe
+            ]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{backgrounds, positioning, scopes}
+\tikzset{FOOT/.style = {
+every node/.append style = {font=\sffamily\bfseries,
+                            text=white,
+                            align=center,
+                            minimum height=11mm,
+                            outer sep=0pt,
+                            },
+               sx/.style = {xshift=##1mm}
+                        }
+        }
+
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\fancyhead{} % clear all header fields
+\fancyfoot{} % clear all footer fields
+%%%%
+\fancyfoot[E]{% even pages
+\begin{tikzpicture}[FOOT,
+remember picture, overlay,
+node distance=0pt]
+\node (E1) [minimum width=25mm,
+            above right=of current page.south west]
+            {\thepage~of~\pageref{LastPage}};
+\node (E2) [minimum width=0.5\textwidth, align=left,
+            right=of E1]
+            { Professional Review Report\\
+                \footnotesize
+              M001\qquad Version 1 Revision 12 -- 28 September 2018};
+\node (E3) [minimum width=0.5\textwidth,
+            align=center,
+            right=of E2]
+            { Institution of Civil Engineers\\
+                \footnotesize
+            Registered charity no. 210252\qquad
+            Scotland no. SC038629};
+\node (E4) [minimum width=25mm, font=\Huge\sffamily\bfseries,
+            right=of E3]
+            {ice};
+\begin{scope}[on background layer]
+\fill[teal] (E1.south west) |- ([sx= 3] E3.north east)
+                            -- ([sx=-3] E3.south east)
+                             -- cycle;
+\fill[black] ([sx=-3] E2.south east) -- ([sx= 3] E2.north east) -|
+            (E4.south east) -- cycle;
+\path[white, line width=1mm, shorten >=-0.5mm, shorten < =-0.5mm]
+            ([sx=-3] E2.south east) edge ([sx=3] E2.north east)
+            ([sx=-3] E4.south west) edge ([sx=3] E4.north west);
+\end{scope}
+\end{tikzpicture}
+                } %even page
+%%%%
+\fancyfoot[O]{% odd pages
+\begin{tikzpicture}[FOOT,
+remember picture, overlay,
+node distance=0pt]
+\node (O1) [minimum width=25mm,
+            above left=of current page.south east]
+            {\thepage~of~\pageref{LastPage}};
+\node (O2) [minimum width=0.5\textwidth, align=left,
+            left=of O1]
+            { Professional Review Report\\
+                \footnotesize
+              M001\qquad Version 1 Revision 12 -- 28 September 2018};
+\node (O3) [minimum width=0.5\textwidth,
+            align=center,
+            left=of O2]
+            { Institution of Civil Ongineers\\
+                \footnotesize
+            Registered charity no. 210252\qquad
+            Scotland no. SC038629};
+\node (O4) [minimum width=25mm, font=\Huge\sffamily\bfseries,
+            left=of O3]
+            {ice};
+\begin{scope}[on background layer]
+\fill[teal] (O1.south east) |- ([sx= 3] O2.north west)
+                            -- ([sx=-3] O2.south west)
+                             -- cycle;
+\fill[black] ([sx=-3] O3.south east) -- ([sx= 3] O3.north east) -|
+            (O4.south west) -- cycle;
+\path[white, line width=1mm, shorten >=-0.5mm, shorten < =-0.5mm]
+            ([sx=-3] O3.south east) edge ([sx=3] O3.north east)
+            ([sx=-3] O3.south west) edge ([sx=3] O3.north west);
+\end{scope}
+\end{tikzpicture}
+                } % for odd page
+
+
+
+\usepackage{lipsum}
+
+\begin{document}
+\pagestyle{fancy}
+
+\chapter{main1}
+\thispagestyle{fancy}
+
+\lipsum
+\lipsum
+\lipsum
+\lipsum
+
+\end{document}

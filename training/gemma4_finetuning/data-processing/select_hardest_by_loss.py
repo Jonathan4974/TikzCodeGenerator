@@ -21,7 +21,7 @@ class LossSelectionConfig:
     output: str = "/data/hardest_manifest.csv"
 
     top_k: int = 100
-    candidate_limit: int | None = 1000
+    candidate_limit: int | None = None
     seed: int = 3407
     max_seq_length: int = 8192
 
@@ -68,8 +68,15 @@ def resolve(root: Path, p: str) -> Path:
     return p if p.is_absolute() else root / p
 
 
-@torch.inference_mode()
-def sample_loss(model, tokenizer, image, prompt: str, answer: str, device: str) -> tuple[float, int]:
+@torch.no_grad()
+def sample_loss(
+    model,
+    tokenizer,
+    image,
+    prompt: str,
+    answer: str,
+    device: str,
+) -> tuple[float, int]:
     prompt_text = (
         "<bos><|turn>user\n"
         "<|image|>"
@@ -80,6 +87,7 @@ def sample_loss(model, tokenizer, image, prompt: str, answer: str, device: str) 
 
     full_text = prompt_text + answer.strip() + "<turn|>"
 
+    # Prompt nur auf CPU tokenisieren, um prompt_len zu bestimmen
     prompt_inputs = tokenizer(
         image,
         prompt_text,
@@ -89,6 +97,7 @@ def sample_loss(model, tokenizer, image, prompt: str, answer: str, device: str) 
     prompt_len = prompt_inputs["input_ids"].shape[-1]
     del prompt_inputs
 
+    # Full input erst auf CPU tokenisieren, dann auf GPU schieben
     full_inputs = tokenizer(
         image,
         full_text,
@@ -101,16 +110,36 @@ def sample_loss(model, tokenizer, image, prompt: str, answer: str, device: str) 
 
     outputs = model(
         **full_inputs,
-        labels=labels,
         use_cache=False,
     )
 
-    loss = outputs.loss.item()
-    n_tokens = (labels[:, 1:] != -100).sum().item()
+    logits = outputs.logits
 
-    del full_inputs, labels, outputs
+    shift_logits = logits[:, :-1, :]
+    shift_labels = labels[:, 1:]
 
-    return loss, n_tokens
+    loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-100)
+
+    loss = loss_fct(
+        shift_logits.reshape(-1, shift_logits.size(-1)),
+        shift_labels.reshape(-1),
+    )
+
+    n_tokens = (shift_labels != -100).sum().item()
+    mean_loss = loss.item()
+
+    del full_inputs
+    del labels
+    del outputs
+    del logits
+    del shift_logits
+    del shift_labels
+    del loss
+
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
+    return mean_loss, n_tokens
 
 
 def main():
