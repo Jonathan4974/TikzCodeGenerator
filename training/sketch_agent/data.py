@@ -35,9 +35,18 @@ def sketch_to_canny(image: Image.Image, low_threshold: int, high_threshold: int)
     return Image.fromarray(np.stack([arr] * 3, axis=-1))
 
 
+_hed_detector = None
+
+
 def sketch_to_scribble(image: Image.Image) -> Image.Image:
-    """Scribble ControlNets"""
-    return image.convert("RGB")
+    """Matches xinsir/controlnet-scribble-sdxl-1.0's."""
+    global _hed_detector
+    if _hed_detector is None:
+        from controlnet_aux import HEDdetector
+
+        _hed_detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
+    size = image.size[0]
+    return _hed_detector(image, scribble=True, detect_resolution=size, image_resolution=size).convert("RGB")
 
 
 def prepare_conditioning_image(image: Image.Image, cfg: "SketchAgentConfig") -> Image.Image:

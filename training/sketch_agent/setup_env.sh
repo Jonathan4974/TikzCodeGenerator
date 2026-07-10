@@ -36,6 +36,7 @@ conda run -n "$ENV_NAME" pip install \
   datasets \
   huggingface_hub \
   opencv-python-headless \
+  controlnet_aux \
   torchmetrics \
   dreamsim \
   tensorboard \
@@ -44,7 +45,8 @@ conda run -n "$ENV_NAME" pip install \
   sentencepiece \
   protobuf \
   pymupdf \
-  requests
+  requests \
+  pytest
 
 echo "Checking setup..."
 
