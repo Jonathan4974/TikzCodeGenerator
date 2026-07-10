@@ -35,6 +35,18 @@ def sketch_to_canny(image: Image.Image, low_threshold: int, high_threshold: int)
     return Image.fromarray(np.stack([arr] * 3, axis=-1))
 
 
+def sketch_to_scribble(image: Image.Image) -> Image.Image:
+    """Scribble ControlNets"""
+    return image.convert("RGB")
+
+
+def prepare_conditioning_image(image: Image.Image, cfg: "SketchAgentConfig") -> Image.Image:
+    """Single dispatch point to switch modes (canny or scribble)"""
+    if cfg.conditioning_mode == "canny":
+        return sketch_to_canny(image, cfg.canny_low_threshold, cfg.canny_high_threshold)
+    return sketch_to_scribble(image)
+
+
 def iter_datikz_renders(
     num_samples: int,
     seed: Optional[int] = None,
@@ -190,7 +202,7 @@ def load_synthetic_dataset(output_dir: str | Path) -> List[SyntheticPair]:
 
 
 class SketchAgentDataset(torch.utils.data.Dataset):
-    """(canny(sketch), clean_render) pairs for SDXL+ControlNet+LoRA training.
+    """(conditioning(sketch), clean_render) pairs for SDXL+ControlNet+LoRA training.
 
     Combines freshly-generated/cached synthetic pairs (UltraSketch or displacement,
     sourced from DaTikZ-V4) with any real SketchFig pairs passed in via `extra_pairs`.
@@ -229,11 +241,11 @@ class SketchAgentDataset(torch.utils.data.Dataset):
         sketch = Image.open(pair.input_path).convert("RGB").resize(size)
         target = Image.open(pair.target_path).convert("RGB").resize(size)
 
-        canny_rgb = sketch_to_canny(sketch, self.cfg.canny_low_threshold, self.cfg.canny_high_threshold)
+        conditioning_rgb = prepare_conditioning_image(sketch, self.cfg)
 
         return {
             "pixel_values": to_tensor(target) * 2.0 - 1.0,
-            "conditioning_pixel_values": to_tensor(canny_rgb),
+            "conditioning_pixel_values": to_tensor(conditioning_rgb),
             "original_size": torch.tensor([self.cfg.image_size, self.cfg.image_size]),
             "crop_top_left": torch.tensor([0, 0]),
             "target_size": torch.tensor([self.cfg.image_size, self.cfg.image_size]),

@@ -21,7 +21,7 @@ from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
 from .checkpoint_utils import clear_resumable_state, resolve_latest_dir, resolve_run_name, write_latest_manifest
 from .config import SketchAgentConfig
-from .data import SyntheticPair, sketch_to_canny
+from .data import SyntheticPair, prepare_conditioning_image
 from .eval import pixel_congruence_coefficient
 from .model_loader import SketchAgentModels
 
@@ -197,7 +197,8 @@ class SketchAgentTrainer:
                 generated = self.eval_pipeline(
                     prompt=self.cfg.positive_prompt,
                     negative_prompt=self.cfg.negative_prompt,
-                    image=sketch_to_canny(sketch, self.cfg.canny_low_threshold, self.cfg.canny_high_threshold),
+                    image=prepare_conditioning_image(sketch, self.cfg),
+                    controlnet_conditioning_scale=self.cfg.controlnet_conditioning_scale,
                     num_inference_steps=20,
                     height=self.cfg.image_size,
                     width=self.cfg.image_size,

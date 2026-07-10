@@ -26,7 +26,7 @@ from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
 from .checkpoint_utils import resolve_latest_dir
 from .config import SketchAgentConfig
-from .data import sketch_to_canny
+from .data import prepare_conditioning_image
 from .eval import pixel_congruence_coefficient
 
 cfg = SketchAgentConfig()
@@ -123,7 +123,8 @@ def main() -> None:
         generated = pipe(
             prompt=cfg.positive_prompt,
             negative_prompt=cfg.negative_prompt,
-            image=sketch_to_canny(sketch, cfg.canny_low_threshold, cfg.canny_high_threshold),
+            image=prepare_conditioning_image(sketch, cfg),
+            controlnet_conditioning_scale=cfg.controlnet_conditioning_scale,
             num_inference_steps=30,
             height=image_size,
             width=image_size,

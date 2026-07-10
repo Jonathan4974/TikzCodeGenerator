@@ -17,8 +17,9 @@ class SketchAgentConfig:
 
     # models
     base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
-    controlnet_alt_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
+    conditioning_mode: str = "scribble"  # "scribble" or "canny"
+    canny_controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
+    scribble_controlnet_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
     vae_model: str = "madebyollin/sdxl-vae-fp16-fix"
 
     # LoRA / optimization
@@ -43,16 +44,8 @@ class SketchAgentConfig:
     seed: int = 3407
 
     # SDXL cross-attention prompt + ControlNet canny prep
-    positive_prompt = (
-        "a scientific TikZ diagram, LaTeX rendered figure, vector line art, "
-        "white background, precise geometric shapes, high contrast, sharp clean lines"
-    )
-    # inference-only
-    negative_prompt = (
-        "sketch, hand-drawn, pencil, handwriting, messy, wobbly lines, smudges, grainy, "
-        "photograph, paper texture, watercolor, blurry, low contrast, "
-        "anti-aliasing, 3D rendering, cross-hatching, watermark, signature, jpeg artifacts"
-    )
+    positive_prompt = ""
+    negative_prompt = ""
     canny_low_threshold: int = 100
     canny_high_threshold: int = 200
     controlnet_conditioning_scale: float = 1.0
@@ -80,6 +73,10 @@ class SketchAgentConfig:
 
     # observability
     run_name: Optional[str] = None  # TensorBoard run name; auto-generated (timestamp + job id) if unset
+
+    @property
+    def controlnet_model(self) -> str:
+        return self.scribble_controlnet_model if self.conditioning_mode == "scribble" else self.canny_controlnet_model
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

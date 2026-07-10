@@ -5,11 +5,10 @@ the Structure/Text Agent
 
 ## Architecture
 - Base: `stabilityai/stable-diffusion-xl-base-1.0`
-- ControlNet: `diffusers/controlnet-canny-sdxl-1.0` (default), `xinsir/controlnet-scribble-sdxl-1.0` (fallback if canny underperforms)
+- ControlNet: switchable via `cfg.conditioning_mode` (`"scribble"` (default) or `"canny"`)
 - VAE: `madebyollin/sdxl-vae-fp16-fix`
 - LoRA on the UNet's attention projections only (`to_q`/`to_k`/`to_v`/`to_out.0`), rank 16 / alpha 16. Text encoders, ControlNet, VAE stay fully frozen.
 - Text conditioning: a single fixed positive prompt for every sample (`config.positive_prompt`) plus an inference-only `config.negative_prompt` (used by `trainer.py`'s periodic eval and `check_sketch_agent.py`)
-- ControlNet conditioning image: Canny edges (`cv2.Canny`, thresholds in config) computed from the sketch.
 
 ## Data
 - **Synthetic pairs**: clean renders streamed from `nllg/DaTikZ-V4` (`data.py::iter_datikz_renders`), each paired with a sketch generated via exactly one of two methods chosen per-sample at random - UltraSketch (`nllg/ultrasketch`) or a classical displacement-field warp (`ultrasketch_methods.py`). Cached to disk under `synthetic_dir` with a `manifest.jsonl`. Toggle with `cfg.use_synthetic_data` (default `True`).
