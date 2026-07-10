@@ -48,7 +48,7 @@ class SketchAgentModelLoader:
         text_encoder_2.requires_grad_(False)
 
         prompt_embeds, pooled_prompt_embeds = self._encode_fixed_prompt(
-            tokenizer, tokenizer_2, text_encoder, text_encoder_2, cfg.training_prompt
+            tokenizer, tokenizer_2, text_encoder, text_encoder_2, cfg.positive_prompt
         )
 
         vae = AutoencoderKL.from_pretrained(cfg.vae_model, torch_dtype=dtype).to("cuda")

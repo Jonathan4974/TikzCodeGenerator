@@ -14,11 +14,19 @@ from .trainer import SketchAgentTrainer
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--time-limit-hours", type=float, default=None)
+    parser.add_argument(
+        "--run-name",
+        type=str,
+        default=None,
+        help="explicit run name; auto-generated (timestamp + job id) if unset",
+    )
     args = parser.parse_args()
 
     overrides = {}
     if args.time_limit_hours is not None:
         overrides["time_limit_hours"] = args.time_limit_hours
+    if args.run_name is not None:
+        overrides["run_name"] = args.run_name
     cfg = build_training_config(overrides)
     torch.manual_seed(cfg.seed)
 

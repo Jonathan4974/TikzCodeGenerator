@@ -33,7 +33,7 @@ class SketchAgentConfig:
     # training loop
     batch_size: int = 1
     gradient_accumulation_steps: int = 4  # real optimizer steps = max_steps / 4 = 1250
-    image_size: int = 512
+    image_size: int = 1024
     # max_steps counts dataloader draws (batch_size=1), not accumulated optimizer steps, so it's
     # directly comparable to dataset size: 5000 / 1637 (1500 synthetic + 0.25*549 real) ~= 3 epochs
     max_steps: int = 5000
@@ -43,7 +43,16 @@ class SketchAgentConfig:
     seed: int = 3407
 
     # SDXL cross-attention prompt + ControlNet canny prep
-    training_prompt: str = "a clean technical line drawing"
+    positive_prompt = (
+        "a scientific TikZ diagram, LaTeX rendered figure, vector line art, "
+        "white background, precise geometric shapes, high contrast, sharp clean lines"
+    )
+    # inference-only
+    negative_prompt = (
+        "sketch, hand-drawn, pencil, handwriting, messy, wobbly lines, smudges, grainy, "
+        "photograph, paper texture, watercolor, blurry, low contrast, "
+        "anti-aliasing, 3D rendering, cross-hatching, watermark, signature, jpeg artifacts"
+    )
     canny_low_threshold: int = 100
     canny_high_threshold: int = 200
     controlnet_conditioning_scale: float = 1.0

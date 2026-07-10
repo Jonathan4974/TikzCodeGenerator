@@ -17,7 +17,7 @@ NUM_STEPS = 5
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image-size", type=int, default=512)
+    parser.add_argument("--image-size", type=int, default=1024)
     args = parser.parse_args()
 
     cfg = build_training_config({"image_size": args.image_size})

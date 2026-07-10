@@ -78,9 +78,10 @@ class SketchAgentTrainer:
         self.pooled_prompt_embeds = models.pooled_prompt_embeds.to(self.accelerator.device)
 
         if self.accelerator.is_main_process:
-            run_name = resolve_run_name(Path(cfg.output_dir), Path(cfg.checkpoint_dir), cfg.run_name)
-            self.writer = SummaryWriter(f"{cfg.output_dir}/tensorboard/{run_name}")
+            self.run_name = resolve_run_name(Path(cfg.output_dir), Path(cfg.checkpoint_dir), cfg.run_name)
+            self.writer = SummaryWriter(f"{cfg.output_dir}/tensorboard/{self.run_name}")
         else:
+            self.run_name = None
             self.writer = None
 
         self.eval_pipeline = StableDiffusionXLControlNetPipeline(
@@ -173,7 +174,7 @@ class SketchAgentTrainer:
     def _save_lora_export(self, step: int) -> None:
         if not self.accelerator.is_main_process:
             return
-        lora_dir = Path(self.cfg.lora_output_dir)
+        lora_dir = Path(self.cfg.lora_output_dir) / self.run_name
         step_dir = lora_dir / f"step_{step:06d}"
         self.accelerator.unwrap_model(self.unet).save_lora_adapter(str(step_dir))
         write_latest_manifest(lora_dir, "latest_lora.json", step, step_dir)
@@ -184,7 +185,7 @@ class SketchAgentTrainer:
             return
 
         self.unet.eval()
-        preview_dir = Path(self.cfg.output_dir) / "eval_previews" / f"step_{step:06d}"
+        preview_dir = Path(self.cfg.output_dir) / "eval_previews" / self.run_name / f"step_{step:06d}"
         preview_dir.mkdir(parents=True, exist_ok=True)
 
         size = (self.cfg.image_size, self.cfg.image_size)
@@ -194,7 +195,8 @@ class SketchAgentTrainer:
             target = Image.open(pair.target_path).convert("RGB").resize(size)
             with self.accelerator.autocast():
                 generated = self.eval_pipeline(
-                    prompt=self.cfg.training_prompt,
+                    prompt=self.cfg.positive_prompt,
+                    negative_prompt=self.cfg.negative_prompt,
                     image=sketch_to_canny(sketch, self.cfg.canny_low_threshold, self.cfg.canny_high_threshold),
                     num_inference_steps=20,
                     height=self.cfg.image_size,
