@@ -72,7 +72,8 @@ def main() -> None:
         peak = torch.cuda.max_memory_allocated() / 1e9
         print(f"step {step}: allocated={allocated:.2f}GB peak={peak:.2f}GB")
 
-    print(f"FINAL PEAK VRAM: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
+    print(f"FINAL PEAK VRAM (allocated): {torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
+    print(f"FINAL PEAK VRAM (reserved):  {torch.cuda.max_memory_reserved() / 1e9:.2f} GB")
 
 
 if __name__ == "__main__":
