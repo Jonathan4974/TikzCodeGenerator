@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
-import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -22,7 +21,7 @@ from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
 
 from .checkpoint_utils import clear_resumable_state, resolve_latest_dir, resolve_run_name, write_latest_manifest
 from .config import SketchAgentConfig
-from .data import SyntheticPair
+from .data import SyntheticPair, sketch_to_canny
 from .eval import pixel_congruence_coefficient
 from .model_loader import SketchAgentModels
 
@@ -151,6 +150,8 @@ class SketchAgentTrainer:
         return F.mse_loss(model_pred.float(), target.float(), reduction="mean")
 
     def _save_checkpoint(self, step: int) -> None:
+        if not self.cfg.save_checkpoints:
+            return
         checkpoint_dir = Path(self.cfg.checkpoint_dir)
         ckpt_dir = checkpoint_dir / f"step_{step:06d}"
         self.accelerator.save_state(str(ckpt_dir))
@@ -178,10 +179,6 @@ class SketchAgentTrainer:
         write_latest_manifest(lora_dir, "latest_lora.json", step, step_dir)
         print(f"Saved LoRA export at step {step} -> {step_dir}")
 
-    def _to_canny(self, image: Image.Image) -> Image.Image:
-        arr = cv2.Canny(np.array(image.convert("RGB")), self.cfg.canny_low_threshold, self.cfg.canny_high_threshold)
-        return Image.fromarray(np.stack([arr] * 3, axis=-1))
-
     def _run_eval(self, step: int) -> None:
         if not self.accelerator.is_main_process or not self.eval_pairs:
             return
@@ -198,7 +195,7 @@ class SketchAgentTrainer:
             with self.accelerator.autocast():
                 generated = self.eval_pipeline(
                     prompt=self.cfg.training_prompt,
-                    image=self._to_canny(sketch),
+                    image=sketch_to_canny(sketch, self.cfg.canny_low_threshold, self.cfg.canny_high_threshold),
                     num_inference_steps=20,
                     height=self.cfg.image_size,
                     width=self.cfg.image_size,

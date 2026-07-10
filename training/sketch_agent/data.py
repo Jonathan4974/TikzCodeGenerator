@@ -30,6 +30,11 @@ class SyntheticPair:
     method: str
 
 
+def sketch_to_canny(image: Image.Image, low_threshold: int, high_threshold: int) -> Image.Image:
+    arr = cv2.Canny(np.array(image.convert("RGB")), low_threshold, high_threshold)
+    return Image.fromarray(np.stack([arr] * 3, axis=-1))
+
+
 def iter_datikz_renders(
     num_samples: int,
     seed: Optional[int] = None,
@@ -193,17 +198,27 @@ class SketchAgentDataset(torch.utils.data.Dataset):
 
     def __init__(self, cfg: SketchAgentConfig, extra_pairs: Optional[List[SyntheticPair]] = None):
         self.cfg = cfg
-        self.pairs = generate_synthetic_pairs(
-            cfg.synthetic_dir,
-            num_samples=cfg.synthetic_samples,
-            seed=cfg.seed,
-            ultrasketch_probability=cfg.ultrasketch_probability,
-            displacement_alpha=cfg.displacement_alpha,
-            displacement_sigma=cfg.displacement_sigma,
-            datikz_dataset_name=cfg.datikz_dataset_name,
-            datikz_split=cfg.datikz_split,
-            datikz_streaming=cfg.datikz_streaming,
-        ) + (extra_pairs or [])
+        synthetic_pairs = (
+            generate_synthetic_pairs(
+                cfg.synthetic_dir,
+                num_samples=cfg.synthetic_samples,
+                seed=cfg.seed,
+                ultrasketch_probability=cfg.ultrasketch_probability,
+                displacement_alpha=cfg.displacement_alpha,
+                displacement_sigma=cfg.displacement_sigma,
+                datikz_dataset_name=cfg.datikz_dataset_name,
+                datikz_split=cfg.datikz_split,
+                datikz_streaming=cfg.datikz_streaming,
+            )
+            if cfg.use_synthetic_data
+            else []
+        )
+        self.pairs = synthetic_pairs + (extra_pairs or [])
+        if not self.pairs:
+            raise ValueError(
+                "SketchAgentDataset has no training pairs: enable use_synthetic_data and/or "
+                "use_sketchfig with a non-empty sketchfig_train_fraction"
+            )
 
     def __len__(self) -> int:
         return len(self.pairs)
@@ -214,8 +229,7 @@ class SketchAgentDataset(torch.utils.data.Dataset):
         sketch = Image.open(pair.input_path).convert("RGB").resize(size)
         target = Image.open(pair.target_path).convert("RGB").resize(size)
 
-        canny = cv2.Canny(np.array(sketch), self.cfg.canny_low_threshold, self.cfg.canny_high_threshold)
-        canny_rgb = Image.fromarray(np.stack([canny] * 3, axis=-1))
+        canny_rgb = sketch_to_canny(sketch, self.cfg.canny_low_threshold, self.cfg.canny_high_threshold)
 
         return {
             "pixel_values": to_tensor(target) * 2.0 - 1.0,

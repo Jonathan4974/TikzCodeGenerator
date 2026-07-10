@@ -32,9 +32,11 @@ class SketchAgentConfig:
 
     # training loop
     batch_size: int = 1
-    gradient_accumulation_steps: int = 4 # steps per epoch 1500 (synthetic) + 0.25 * 549 = 1637 -> /4 = 410 steps p epoch 
+    gradient_accumulation_steps: int = 4  # real optimizer steps = max_steps / 4 = 1250
     image_size: int = 512
-    max_steps: int = 5000 # total of ~12 epochs
+    # max_steps counts dataloader draws (batch_size=1), not accumulated optimizer steps, so it's
+    # directly comparable to dataset size: 5000 / 1637 (1500 synthetic + 0.25*549 real) ~= 3 epochs
+    max_steps: int = 5000
     checkpoint_interval_steps: int = 200
     time_limit_hours: float = 7.5
     dataloader_num_workers: int = 2
@@ -47,6 +49,7 @@ class SketchAgentConfig:
     controlnet_conditioning_scale: float = 1.0
 
     # data sourcing
+    use_synthetic_data: bool = True
     synthetic_samples: int = 1500
     ultrasketch_probability: float = 0.5
     displacement_alpha: float = 6.0
@@ -62,6 +65,7 @@ class SketchAgentConfig:
     eval_metrics: Tuple[str, ...] = ("pixel_cc", "siglip", "dreamsim")
 
     # cluster / resume
+    save_checkpoints: bool = True
     self_resubmit: bool = True
     sbatch_script: Optional[str] = None
 

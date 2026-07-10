@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import argparse
+
 import torch
 
-from .config import SketchAgentConfig
+from .config import build_training_config
 from .data import SketchAgentDataset
 from .model_loader import SketchAgentModelLoader
 from .real_data import load_sketchfig_dataset
@@ -10,7 +12,14 @@ from .trainer import SketchAgentTrainer
 
 
 def main() -> None:
-    cfg = SketchAgentConfig()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--time-limit-hours", type=float, default=None)
+    args = parser.parse_args()
+
+    overrides = {}
+    if args.time_limit_hours is not None:
+        overrides["time_limit_hours"] = args.time_limit_hours
+    cfg = build_training_config(overrides)
     torch.manual_seed(cfg.seed)
 
     sketchfig = (

@@ -5,9 +5,11 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 from PIL import Image
 
-from training.sketch_agent.data import generate_synthetic_pairs, load_synthetic_dataset
+from training.sketch_agent.config import build_training_config
+from training.sketch_agent.data import SketchAgentDataset, generate_synthetic_pairs, load_synthetic_dataset, sketch_to_canny
 from training.sketch_agent.real_data import load_sketchfig_dataset
 from training.sketch_agent.ultrasketch_methods import assert_multiple_of, random_displacement_field, resize_to_multiple
 
@@ -29,6 +31,23 @@ class _FakeUltraSketchPipe:
     def __call__(self, prompt, image, mask_img=None, **kwargs):
         sketch = image.convert("L").point(lambda value: 255 if value > 220 else 0).convert("RGB")
         return SimpleNamespace(images=[sketch])
+
+
+def test_sketch_to_canny_produces_three_channel_binary_edge_map():
+    image = _gradient_image(64)
+    canny = sketch_to_canny(image, low_threshold=100, high_threshold=200)
+    arr = np.array(canny)
+
+    assert arr.shape == (64, 64, 3)
+    assert set(np.unique(arr).tolist()) <= {0, 255}
+    assert np.array_equal(arr[..., 0], arr[..., 1])
+    assert np.array_equal(arr[..., 1], arr[..., 2])
+
+
+def test_sketch_agent_dataset_raises_when_no_pairs_available():
+    cfg = build_training_config({"use_synthetic_data": False})
+    with pytest.raises(ValueError):
+        SketchAgentDataset(cfg, extra_pairs=[])
 
 
 def test_resize_to_multiple_rounds_down_and_is_idempotent():

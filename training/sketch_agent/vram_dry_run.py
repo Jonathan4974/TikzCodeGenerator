@@ -5,16 +5,22 @@ Uses random tensors rather than the real dataset.
 """
 from __future__ import annotations
 
+import argparse
+
 import torch
 
-from .config import SketchAgentConfig
+from .config import build_training_config
 from .model_loader import SketchAgentModelLoader
 
 NUM_STEPS = 5
 
 
 def main() -> None:
-    cfg = SketchAgentConfig()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--image-size", type=int, default=512)
+    args = parser.parse_args()
+
+    cfg = build_training_config({"image_size": args.image_size})
     torch.cuda.reset_peak_memory_stats()
 
     models = SketchAgentModelLoader(cfg).load()
