@@ -17,7 +17,7 @@ class SketchAgentConfig:
 
     # models
     base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    conditioning_mode: str = "scribble"  # "scribble" or "canny"
+    conditioning_mode: str = "canny"  # "scribble" or "canny"
     canny_controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
     scribble_controlnet_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
     vae_model: str = "madebyollin/sdxl-vae-fp16-fix"
