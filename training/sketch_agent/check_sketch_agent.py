@@ -125,6 +125,7 @@ def main() -> None:
             negative_prompt=cfg.negative_prompt,
             image=prepare_conditioning_image(sketch, cfg),
             controlnet_conditioning_scale=cfg.controlnet_conditioning_scale,
+            guidance_scale=cfg.guidance_scale,
             num_inference_steps=30,
             height=image_size,
             width=image_size,

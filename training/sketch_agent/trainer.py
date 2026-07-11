@@ -199,6 +199,7 @@ class SketchAgentTrainer:
                     negative_prompt=self.cfg.negative_prompt,
                     image=prepare_conditioning_image(sketch, self.cfg),
                     controlnet_conditioning_scale=self.cfg.controlnet_conditioning_scale,
+                    guidance_scale=self.cfg.guidance_scale,
                     num_inference_steps=20,
                     height=self.cfg.image_size,
                     width=self.cfg.image_size,

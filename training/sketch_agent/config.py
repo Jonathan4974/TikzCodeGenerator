@@ -44,11 +44,12 @@ class SketchAgentConfig:
     seed: int = 3407
 
     # SDXL cross-attention prompt + ControlNet canny prep
-    positive_prompt = ""
-    negative_prompt = ""
+    positive_prompt = "Expert scientific figure, flat 2D vector art, TikZ style. black lines on a pure solid white background"
+    negative_prompt = "gray background, grid lines, notebook paper, textured paper, yellowed paper, shading, shadows, 3D, gradients, blurry, messy, hand-drawn, wobbly, distorted text, watermark, low contrast"
     canny_low_threshold: int = 100
     canny_high_threshold: int = 200
     controlnet_conditioning_scale: float = 1.0
+    guidance_scale: float = 5.0
 
     # data sourcing
     use_synthetic_data: bool = True
