@@ -189,6 +189,7 @@ class SketchAgentTrainer:
         preview_dir.mkdir(parents=True, exist_ok=True)
 
         size = (self.cfg.image_size, self.cfg.image_size)
+        generator = torch.Generator(device=self.accelerator.device).manual_seed(self.cfg.seed)
         scores: dict[str, list[float]] = {metric: [] for metric in self.cfg.eval_metrics}
         for i, pair in enumerate(self.eval_pairs[: self.cfg.eval_sample_size]):
             sketch = Image.open(pair.input_path).convert("RGB").resize(size)
@@ -200,6 +201,7 @@ class SketchAgentTrainer:
                     image=prepare_conditioning_image(sketch, self.cfg),
                     controlnet_conditioning_scale=self.cfg.controlnet_conditioning_scale,
                     guidance_scale=self.cfg.guidance_scale,
+                    generator=generator,
                     num_inference_steps=20,
                     height=self.cfg.image_size,
                     width=self.cfg.image_size,

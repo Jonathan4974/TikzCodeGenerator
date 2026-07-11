@@ -115,6 +115,8 @@ def main() -> None:
         pipe.unet.load_lora_adapter(str(lora_dir), prefix=None, use_safetensors=True)
     pipe.to("cuda")
 
+    generator = torch.Generator(device="cuda").manual_seed(cfg.seed)
+
     size = (image_size, image_size)
     for sketch_path, target_path in TEST_PAIRS:
         sketch = Image.open(sketch_path).convert("RGB").resize(size)
@@ -126,6 +128,7 @@ def main() -> None:
             image=prepare_conditioning_image(sketch, cfg),
             controlnet_conditioning_scale=cfg.controlnet_conditioning_scale,
             guidance_scale=cfg.guidance_scale,
+            generator=generator,
             num_inference_steps=30,
             height=image_size,
             width=image_size,
