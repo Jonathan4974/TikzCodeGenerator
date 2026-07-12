@@ -57,6 +57,15 @@ def skip_whitespace_and_comments(tex: str, start: int) -> int:
             continue
 
         if tex[i] == "%":
+            backslash_count = 0
+            k = i - 1
+            while k >= 0 and tex[k] == "\\":
+                backslash_count += 1
+                k -= 1
+            
+            if backslash_count % 2 != 0:
+                break
+            
             # skip to end of line
             while i < n and tex[i] != "\n":
                 i += 1
@@ -154,9 +163,9 @@ def replace_all_nodes(tex: str, replacement="Text") -> str:
         node_pos = None
 
         p1 = tex.find("\\node", i)
-        # print(f"Found \\node at {p1}")  # Debugging line
+        print(f"Found \\node at {p1}")  # Debugging line
         p2 = find_next_path_node(tex, i)
-        # print(f"Found node at {p2}")  # Debugging line
+        print(f"Found node at {p2}")  # Debugging line
 
         candidates = [p for p in [p1, p2] if p != -1]
 
@@ -184,35 +193,36 @@ def replace_all_nodes(tex: str, replacement="Text") -> str:
         # Step 2: skip optional [...] (...) and find node content {...}
         ################################################################    
         while j < n and tex[j] != "{":
-            # print(f"Checking character at position {j}: '{tex[j]}'")
+            print(f"Checking character at position {j}: '{tex[j]}'")
             if tex[j] == "[":
                 end_opt = find_matching(tex, j, "[", "]")
                 if end_opt == -1:
                     break
                 j = end_opt
-                # print("find optional [], skipping to", j, "content char:", tex[j])
+                print("find optional [], skipping to", j, "content char:", tex[j])
             elif tex[j] == "(":
                 end_opt = find_matching(tex, j, "(", ")")
                 if end_opt == -1:
                     break
                 j = end_opt
-                # print("find optional (), skipping to", j, "content char:", tex[j])
+                print("find optional (), skipping to", j, "content char:", tex[j])
             j_after = skip_whitespace_and_comments(tex, j)
-            # print(f"After skipping whitespace/comments, j_after is {j_after}", "character:", tex[j_after])
+            print(f"After skipping whitespace/comments, j_after is {j_after}", "character:", tex[j_after])
 
             if j_after == j:
                 j += 1
-                # print(f"No Skipping, now at position {j}", "character:", tex[j])
+                print(f"No Skipping, now at position {j}", "character:", tex[j])
             else:
                 j = j_after
-                # print(f"Skipping whitespace/comments, now at position {j}", "character:", tex[j])
+                print(f"Skipping whitespace/comments, now at position {j}", "character:", tex[j])
 
         if j >= n:
             break
         
-        # print(f"Start checking character at position {j}: '{tex[j]}'")
+        print(f"Start checking character at position {j}: '{tex[j]}'")
+        print("Cheking { at", tex[j-10:j+10])
         end = find_matching(tex, j, "{", "}") # j is the start of the node content
-        # print(f"Matching closing brace found at position {end}")  # Debugging line
+        print(f"Matching closing brace found at position {end}")  # Debugging line
         if end == -1:
             break
         # print(j)
@@ -220,9 +230,9 @@ def replace_all_nodes(tex: str, replacement="Text") -> str:
         ################################################################
         # Step 3: find semicolon ;
         ################################################################
-        k = end + 1
-        while k < n and tex[k] != ";":
-            k += 1
+        # k = end + 1
+        # while k < n and tex[k] != ";":
+        #     k += 1
 
         ################################################################
         # rebuild
@@ -230,14 +240,19 @@ def replace_all_nodes(tex: str, replacement="Text") -> str:
         #print(j)
         result.append(tex[node_pos:j])
         result.append("{")
-        result.append(replacement)
-        result.append("}")
-        result.append(tex[end + 1:k])
+        if skip_whitespace_and_comments(tex, j + 1) == end:
+            result.append("}")
+        else:
+            result.append(replacement)
+            result.append("}")
+        # result.append(tex[end + 1:k])
 
-        if k < n:
-            result.append(";")
-            k += 1
-        i = k
+        # if k < n:
+        #     result.append(";")
+        #     k += 1
+        # i = k
+
+        i = end + 1
 
     return "".join(result)
 
@@ -260,8 +275,8 @@ def process_latex(tex: str, mode: str) -> str:
 
 if __name__ == "__main__":
 
-    input_file = "/usr/prakt/s0042/projects/data/benchmark_data/references/datikz-test_row_00000013.txt"
-    output_file = "/usr/prakt/s0042/projects/test/datikz-test_replace_row_00000013.txt"
+    input_file = "/usr/prakt/s0042/projects/data/benchmark_data/references/datikz-test_row_00000000.txt"
+    output_file = "/usr/prakt/s0042/projects/test/datikz-test_replace_row_00000000.txt"
     mode = "replace_all"  # modes: clean_all_text | replace_all
 
     with open(input_file, "r", encoding="utf-8") as f:
