@@ -1,0 +1,2 @@
+tac: failed to open '/run/user/264042/enroot/environment' for reading: No such file or directory
+enroot-mount: failed to open: /run/user/264042/enroot/fstab: No such file or directory

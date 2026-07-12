@@ -1,0 +1,2 @@
+/var/spool/slurmd/job1621039/slurm_script: line 66: [: -ne: unary operator expected
+[2026-07-10T13:13:20.005] error: *** JOB 1621039 ON node9 CANCELLED AT 2026-07-10T13:13:20 DUE TO TIME LIMIT ***
