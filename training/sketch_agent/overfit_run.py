@@ -5,6 +5,7 @@ Usage:
   conda activate sketch-agent
   python -m training.sketch_agent.overfit_run --max-steps 600
   python -m training.sketch_agent.overfit_run --max-steps 1200   # resumes from checkpoint
+  python -m training.sketch_agent.overfit_run --seed 999          # pick a different sample
 
 Then:
   tensorboard --logdir training/sketch_agent/output_overfit/tensorboard
@@ -26,23 +27,32 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-steps", type=int, default=600)
     parser.add_argument("--checkpoint-interval-steps", type=int, default=50)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="overrides cfg.seed; drives which DaTikZ render is picked as the 1 overfit sample "
+        "(and its ultrasketch-vs-displacement method draw). Only takes effect on a cache miss - "
+        "see the module docstring note on clearing output_overfit/synthetic_pairs first.",
+    )
     args = parser.parse_args()
 
-    cfg = build_training_config(
-        {
-            "output_dir": OVERFIT_DIR,
-            "checkpoint_dir": f"{OVERFIT_DIR}/checkpoints",
-            "lora_output_dir": f"{OVERFIT_DIR}/lora",
-            "synthetic_dir": f"{OVERFIT_DIR}/synthetic_pairs",
-            "sketchfig_cache_dir": f"{OVERFIT_DIR}/sketchfig_cache",
-            "max_steps": args.max_steps,
-            "checkpoint_interval_steps": args.checkpoint_interval_steps,
-            "synthetic_samples": 1,
-            "use_sketchfig": False,
-            "eval_sample_size": 1,
-            "self_resubmit": False,
-        }
-    )
+    overrides = {
+        "output_dir": OVERFIT_DIR,
+        "checkpoint_dir": f"{OVERFIT_DIR}/checkpoints",
+        "lora_output_dir": f"{OVERFIT_DIR}/lora",
+        "synthetic_dir": f"{OVERFIT_DIR}/synthetic_pairs",
+        "sketchfig_cache_dir": f"{OVERFIT_DIR}/sketchfig_cache",
+        "max_steps": args.max_steps,
+        "checkpoint_interval_steps": args.checkpoint_interval_steps,
+        "synthetic_samples": 1,
+        "use_sketchfig": False,
+        "eval_sample_size": 1,
+        "self_resubmit": False,
+    }
+    if args.seed is not None:
+        overrides["seed"] = args.seed
+    cfg = build_training_config(overrides)
     seed_everything(cfg.seed)
 
     train_dataset = SketchAgentDataset(cfg)

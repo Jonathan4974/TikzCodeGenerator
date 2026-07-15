@@ -51,7 +51,7 @@ class SketchAgentConfig:
     canny_low_threshold: int = 100
     canny_high_threshold: int = 200
     controlnet_conditioning_scale: float = 1.0
-    guidance_scale: float = 5.0
+    guidance_scale: float = 7.0
 
     # data sourcing
     use_synthetic_data: bool = True

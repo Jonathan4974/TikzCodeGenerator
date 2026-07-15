@@ -44,14 +44,14 @@ the Structure/Text Agent
 ```bash
 bash training/sketch_agent/setup_env.sh                                                                   # conda env setup
 python -m training.sketch_agent.vram_dry_run                                                              # check VRAM headroom before a full run
-python -m training.sketch_agent.vram_dry_run --image-size 1024                                             # at a different resolutions
+python -m training.sketch_agent.vram_dry_run --image-size 1024                                            # at a different resolutions
 python -m training.sketch_agent.overfit_run --max-steps 600                                               # overfit-to-1-sample
 sbatch training/sketch_agent/train.sbatch                                                                 # submit the real training job
 tensorboard --logdir training/sketch_agent/output/tensorboard                                             # watch loss/eval curves live
 python -m training.sketch_agent.check_sketch_agent                                                        # watch scores on real held-out examples once trained
 python -m training.sketch_agent.check_sketch_agent --run-name <name>                                      # check a specific run instead of the most recently modified one
 python -m training.sketch_agent.check_sketch_agent --zero-shot                                            # baseline (no fine-tuning at all)
-python -m training.sketch_agent.check_sketch_agent --zero-shot --image-size 1024 --tag v2                  # check_previews/zero_shot/v2/
+python -m training.sketch_agent.check_sketch_agent --zero-shot --image-size 1024 --tag v2                 # check_previews/zero_shot/v2/
 python -m training.sketch_agent.check_sketch_agent --run-name 20260709-191929_joblocal --tag step_003600  # check one specific checkpoint of a specific run
 ```
 
