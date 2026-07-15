@@ -5,7 +5,7 @@ the Structure/Text Agent
 
 ## Architecture
 - Base: `stabilityai/stable-diffusion-xl-base-1.0`
-- ControlNet: switchable via `cfg.conditioning_mode` (`"scribble"` (default) or `"canny"`)
+- ControlNet: switchable via `cfg.conditioning_mode` (`"canny"` or `"scribble"`)
 - VAE: `madebyollin/sdxl-vae-fp16-fix`
 - LoRA on the UNet's attention projections only (`to_q`/`to_k`/`to_v`/`to_out.0`), rank 16 / alpha 16. Text encoders, ControlNet, VAE stay fully frozen.
 - Text conditioning: a single fixed positive prompt for every sample (`config.positive_prompt`) plus an inference-only `config.negative_prompt` (used by `trainer.py`'s periodic eval and `check_sketch_agent.py`)

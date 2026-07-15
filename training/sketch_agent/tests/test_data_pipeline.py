@@ -9,7 +9,13 @@ import pytest
 from PIL import Image
 
 from training.sketch_agent.config import build_training_config
-from training.sketch_agent.data import SketchAgentDataset, generate_synthetic_pairs, load_synthetic_dataset, sketch_to_canny
+from training.sketch_agent.data import (
+    SketchAgentDataset,
+    generate_synthetic_pairs,
+    iter_datikz_renders,
+    load_synthetic_dataset,
+    sketch_to_canny,
+)
 from training.sketch_agent.real_data import load_sketchfig_dataset
 from training.sketch_agent.ultrasketch_methods import assert_multiple_of, random_displacement_field, resize_to_multiple
 
@@ -18,7 +24,9 @@ def _solid_image(size: int = 64, color=(120, 140, 160)) -> Image.Image:
     return Image.new("RGB", (size, size), color=color)
 
 
-def _fake_datikz_renders(n: int, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0, size: int = 64):
+def _fake_datikz_renders(
+    n: int, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0, buffer_size=None, size: int = 64
+):
     for offset in range(n):
         idx = start_index + offset
         yield f"fake_{idx:03d}", _solid_image(size, color=(idx % 255, 10, 20))
@@ -28,7 +36,13 @@ class _FakeUltraSketchPipe:
     """Stand-in with the same call interface as the real diffusers pipeline, used only
     in tests so `run_ultrasketch`'s resize/assert plumbing can be tested without a GPU."""
 
-    def __call__(self, prompt, image, mask_img=None, **kwargs):
+    device = "cpu"
+
+    def __init__(self):
+        self.seen_generator_seeds = []
+
+    def __call__(self, prompt, image, mask_img=None, generator=None, **kwargs):
+        self.seen_generator_seeds.append(generator.initial_seed() if generator is not None else None)
         sketch = image.convert("L").point(lambda value: 255 if value > 220 else 0).convert("RGB")
         return SimpleNamespace(images=[sketch])
 
@@ -102,6 +116,21 @@ def test_generate_synthetic_pairs_assigns_methods_matching_rng_draws():
         assert [json.loads(line)["idx"] for line in manifest_lines] == list(range(num_samples))
 
 
+def test_generate_synthetic_pairs_ultrasketch_calls_use_a_per_sample_seeded_generator():
+    # Regression check: run_ultrasketch used to be called with no generator at all,
+    # relying on whatever the ambient global torch RNG state happened to be - not
+    # reproducible on its own. Each sample must now get its own deterministic
+    # seed=cfg.seed+idx generator, matching random_displacement_field's convention.
+    with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
+        "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
+    ):
+        pipe = _FakeUltraSketchPipe()
+        with patch("training.sketch_agent.data.load_ultrasketch_pipeline", return_value=pipe):
+            generate_synthetic_pairs(tmp, num_samples=4, seed=3, ultrasketch_probability=1.0)
+
+    assert pipe.seen_generator_seeds == [3, 4, 5, 6]
+
+
 def test_generate_synthetic_pairs_probability_zero_is_all_displacement():
     with tempfile.TemporaryDirectory(prefix="sketch-agent-data-") as tmp, patch(
         "training.sketch_agent.data.iter_datikz_renders", side_effect=_fake_datikz_renders
@@ -124,7 +153,7 @@ def test_generate_synthetic_pairs_is_incremental():
     ):
         calls = []
 
-        def counting_render_source(n, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0):
+        def counting_render_source(n, seed=None, dataset_name=None, split=None, streaming=None, start_index: int = 0, buffer_size=None):
             calls.append((n, start_index))
             return _fake_datikz_renders(n, start_index=start_index)
 
@@ -138,6 +167,32 @@ def test_generate_synthetic_pairs_is_incremental():
         # Regression check: topped-up renders must use fresh source_names (start_index
         # advanced), not repeat the first batch's names/content from scratch.
         assert [pair.source_name for pair in pairs] == [f"fake_{i:03d}" for i in range(5)]
+
+
+def test_iter_datikz_renders_shuffle_order_is_independent_of_num_samples_requested():
+    # Regression check: buffer_size used to be derived from the per-call `num_samples`
+    # (max(num_samples * 10, 1000)), and HF `datasets`' streaming .shuffle(seed, buffer_size)
+    # produces a different row sequence for a different buffer_size even with the same seed.
+    # That meant "same seed" did not mean "same data" once num_samples changed - e.g. a
+    # small incremental top-up call diverged from what the original larger call produced.
+    # buffer_size is now fixed (config.datikz_shuffle_buffer_size), so a small request must
+    # be a true prefix of a larger request at the same seed.
+    from datasets import Dataset
+
+    n_rows = 1600
+    fake_rows = {
+        "file_id": [f"id_{i:04d}" for i in range(n_rows)],
+        "png_image": [_solid_image(2, color=(i % 255, 0, 0)) for i in range(n_rows)],
+    }
+
+    def _fake_load_dataset(*args, **kwargs):
+        return Dataset.from_dict(fake_rows).to_iterable_dataset()
+
+    with patch("datasets.load_dataset", side_effect=_fake_load_dataset):
+        small_request = [file_id for file_id, _ in iter_datikz_renders(20, seed=7)]
+        large_request = [file_id for file_id, _ in iter_datikz_renders(1500, seed=7)]
+
+    assert small_request == large_request[:20]
 
 
 def test_load_synthetic_dataset_reports_real_method_per_pair():

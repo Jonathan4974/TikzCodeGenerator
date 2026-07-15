@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-import torch
-
-from .config import build_training_config
+from .config import build_training_config, seed_everything
 from .data import SketchAgentDataset
 from .model_loader import SketchAgentModelLoader
 from .real_data import load_sketchfig_dataset
@@ -28,7 +26,7 @@ def main() -> None:
     if args.run_name is not None:
         overrides["run_name"] = args.run_name
     cfg = build_training_config(overrides)
-    torch.manual_seed(cfg.seed)
+    seed_everything(cfg.seed)
 
     sketchfig = (
         load_sketchfig_dataset(

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 from PIL import Image
@@ -71,13 +71,14 @@ def random_displacement_field(image: Image.Image, alpha: float = 6, sigma: float
     return Image.fromarray(np.clip(distorted, 0, 255).astype(np.uint8))
 
 
-def run_ultrasketch(pipe: Any, image: Image.Image, prompt: str) -> Image.Image:
+def run_ultrasketch(pipe: Any, image: Image.Image, prompt: str, generator: Optional[Any] = None) -> Image.Image:
     image = resize_to_multiple(image).convert("RGB")
     assert_multiple_of(image, "UltraSketch input", MULTIPLE_OF)
     output = pipe(
         prompt=prompt,
         image=image,
         mask_img=Image.new("RGB", image.size, "white"),
+        generator=generator,
         **INFERENCE_PARAMS,
     ).images[0]
     output = resize_like(output.convert("RGB"), image)

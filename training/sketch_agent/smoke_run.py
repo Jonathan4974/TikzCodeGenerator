@@ -14,7 +14,7 @@ import argparse
 
 import torch
 
-from .config import build_training_config
+from .config import build_training_config, seed_everything
 from .data import SketchAgentDataset
 from .model_loader import SketchAgentModelLoader
 from .real_data import load_sketchfig_dataset
@@ -45,7 +45,7 @@ def main() -> None:
     if args.image_size is not None:
         overrides["image_size"] = args.image_size
     cfg = build_training_config(overrides)
-    torch.manual_seed(cfg.seed)
+    seed_everything(cfg.seed)
     torch.cuda.reset_peak_memory_stats()
 
     sketchfig = (

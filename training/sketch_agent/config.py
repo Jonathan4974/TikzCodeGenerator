@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Optional, Tuple
 
+import torch
+
 
 @dataclass
 class SketchAgentConfig:
@@ -60,6 +62,7 @@ class SketchAgentConfig:
     datikz_dataset_name: str = "nllg/DaTikZ-V4"
     datikz_split: str = "train"
     datikz_streaming: bool = True
+    datikz_shuffle_buffer_size: int = 10000
     use_sketchfig: bool = True
     sketchfig_dataset_name: str = "nllg/sketchfig"
     sketchfig_train_fraction: float = 0.25
@@ -89,3 +92,13 @@ def build_training_config(overrides: Optional[dict[str, Any]] = None) -> SketchA
         for key, value in overrides.items():
             setattr(config, key, value)
     return config
+
+
+def seed_everything(seed: int) -> None:
+    """Seeds torch's global RNG (CPU + CUDA) and nudges cuDNN toward deterministic conv
+    algorithm selection. Call once, before any model/dataset construction that consumes
+    randomness from the global RNG.
+    """
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

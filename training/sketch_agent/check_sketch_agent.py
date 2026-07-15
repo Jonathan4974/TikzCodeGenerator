@@ -97,6 +97,8 @@ def main() -> None:
     args = parser.parse_args()
 
     image_size = args.image_size or cfg.image_size
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
     if args.zero_shot:
         lora_dir = None

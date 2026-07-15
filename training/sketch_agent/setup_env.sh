@@ -29,16 +29,16 @@ conda run -n "$ENV_NAME" pip install \
   --index-url https://download.pytorch.org/whl/cu124
 
 conda run -n "$ENV_NAME" pip install \
-  diffusers \
-  transformers \
-  accelerate \
-  peft \
-  datasets \
+  "diffusers==0.39.0" \
+  "transformers==5.13.0" \
+  "accelerate==1.14.0" \
+  "peft==0.19.1" \
+  "datasets==5.0.0" \
   huggingface_hub \
   opencv-python-headless \
-  controlnet_aux \
-  torchmetrics \
-  dreamsim \
+  "controlnet_aux==0.0.10" \
+  "torchmetrics==1.9.0" \
+  "dreamsim==0.2.1" \
   tensorboard \
   pillow \
   scipy \

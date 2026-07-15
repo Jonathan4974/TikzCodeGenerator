@@ -63,6 +63,7 @@ def iter_datikz_renders(
     split: str = "train",
     streaming: bool = True,
     start_index: int = 0,
+    buffer_size: int = 10000,
 ) -> Iterator[Tuple[str, Image.Image]]:
     """Source clean renders from DaTikZ-V4.
 
@@ -76,7 +77,7 @@ def iter_datikz_renders(
 
     ds = load_dataset(dataset_name, split=split, streaming=streaming)
     if seed is not None:
-        ds = ds.shuffle(seed=seed, buffer_size=max(num_samples * 10, 1000))
+        ds = ds.shuffle(seed=seed, buffer_size=buffer_size)
 
     rows = itertools.islice(ds, start_index, start_index + num_samples)
     for row in rows:
@@ -94,6 +95,7 @@ def generate_synthetic_pairs(
     datikz_dataset_name: str = "nllg/DaTikZ-V4",
     datikz_split: str = "train",
     datikz_streaming: bool = True,
+    datikz_shuffle_buffer_size: int = 10000,
 ) -> List[SyntheticPair]:
     """Generate (sketch, clean_render) pairs, selecting ONE method (ultrasketch or displacement) per pair.
 
@@ -127,6 +129,7 @@ def generate_synthetic_pairs(
         split=datikz_split,
         streaming=datikz_streaming,
         start_index=existing_count,
+        buffer_size=datikz_shuffle_buffer_size,
     )
     try:
         for offset in range(num_new):
@@ -137,7 +140,8 @@ def generate_synthetic_pairs(
             if rng.random() < ultrasketch_probability:
                 if pipe is None:
                     pipe = load_ultrasketch_pipeline()
-                sketch_image = run_ultrasketch(pipe, clean_image, ULTRASKETCH_PROMPT)
+                ultrasketch_generator = torch.Generator(device=pipe.device).manual_seed(seed + idx)
+                sketch_image = run_ultrasketch(pipe, clean_image, ULTRASKETCH_PROMPT, generator=ultrasketch_generator)
                 method = "ultrasketch"
             else:
                 sketch_image = random_displacement_field(
@@ -230,6 +234,7 @@ class SketchAgentDataset(torch.utils.data.Dataset):
                 datikz_dataset_name=cfg.datikz_dataset_name,
                 datikz_split=cfg.datikz_split,
                 datikz_streaming=cfg.datikz_streaming,
+                datikz_shuffle_buffer_size=cfg.datikz_shuffle_buffer_size,
             )
             if cfg.use_synthetic_data
             else []

@@ -14,9 +14,7 @@ from __future__ import annotations
 
 import argparse
 
-import torch
-
-from .config import build_training_config
+from .config import build_training_config, seed_everything
 from .data import SketchAgentDataset
 from .model_loader import SketchAgentModelLoader
 from .trainer import SketchAgentTrainer
@@ -45,7 +43,7 @@ def main() -> None:
             "self_resubmit": False,
         }
     )
-    torch.manual_seed(cfg.seed)
+    seed_everything(cfg.seed)
 
     train_dataset = SketchAgentDataset(cfg)
     assert len(train_dataset.pairs) == 1, f"expected exactly 1 pair, got {len(train_dataset.pairs)}"
