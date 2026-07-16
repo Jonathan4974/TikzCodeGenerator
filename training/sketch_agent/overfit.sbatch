@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name="sketch_agent_train"
+#SBATCH --job-name="sketch_agent_overfit"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --time=0-08:00:00
+#SBATCH --time=0-01:00:00
 #SBATCH --partition=NORMAL
 #SBATCH --account=stud
 #SBATCH --qos=stud
 #SBATCH --nodelist=node4,node5,node14,node15,node16,node17,node18,node19,node20,node21
 #SBATCH --mail-type=ALL
-#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/slurm-%j.out
+#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/slurm-overfit-%j.out
 
 set -euo pipefail
 
@@ -47,7 +47,7 @@ source "$CONDA_SH"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.train
+conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --seed 999 --max-steps 600
 
 echo "Job finished."
 date
