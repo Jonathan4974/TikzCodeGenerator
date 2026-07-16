@@ -47,7 +47,7 @@ source "$CONDA_SH"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --seed 999 --max-steps 600
+conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --max-steps 1200
 
 echo "Job finished."
 date
