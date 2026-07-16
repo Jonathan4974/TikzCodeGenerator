@@ -16,9 +16,10 @@ if [ ${#MODES[@]} -eq 0 ]; then
   MODES=(canny scribble lineart anime_lineart)
 fi
 
-echo "Wiping training/sketch_agent/output_overfit/ ..."
-rm -rf training/sketch_agent/output_overfit
-echo "Cleared."
+for mode in "${MODES[@]}"; do
+  echo "Wiping training/sketch_agent/output_overfit/$mode/ ..."
+  rm -rf "training/sketch_agent/output_overfit/$mode"
+done
 
 for mode in "${MODES[@]}"; do
   run_name="overfit_${mode}_$(date +%Y%m%d-%H%M%S)"

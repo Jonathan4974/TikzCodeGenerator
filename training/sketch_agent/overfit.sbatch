@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --time=0-02:00:00
+#SBATCH --time=0-03:30:00
 #SBATCH --partition=NORMAL
 #SBATCH --account=stud
 #SBATCH --qos=stud
@@ -45,10 +45,11 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 source "$CONDA_SH"
+conda activate "$ENV_NAME"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --max-steps 1200 "$@"
+python -m training.sketch_agent.overfit_run --max-steps 1200 "$@"
 
 echo "Job finished."
 date

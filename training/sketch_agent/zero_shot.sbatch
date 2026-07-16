@@ -45,6 +45,7 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 source "$CONDA_SH"
+conda activate "$ENV_NAME"
 
 cd "$PROJECT"
 
@@ -59,7 +60,7 @@ fi
 
 for mode in "${MODES[@]}"; do
   echo "=== conditioning_mode=$mode ==="
-  conda run -n "$ENV_NAME" python -m training.sketch_agent.check_sketch_agent \
+  python -m training.sketch_agent.check_sketch_agent \
     --zero-shot --conditioning-mode "$mode" --tag "${mode}_1_7"
 done
 

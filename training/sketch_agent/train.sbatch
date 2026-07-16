@@ -45,10 +45,11 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 source "$CONDA_SH"
+conda activate "$ENV_NAME"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.train
+python -m training.sketch_agent.train
 
 echo "Job finished."
 date
