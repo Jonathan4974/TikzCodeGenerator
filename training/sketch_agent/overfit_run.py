@@ -4,19 +4,20 @@ and evaluates on that same pair.
 Usage:
   conda activate sketch-agent
   python -m training.sketch_agent.overfit_run --max-steps 600
-  python -m training.sketch_agent.overfit_run --max-steps 1200      # resumes from checkpoint
-  python -m training.sketch_agent.overfit_run --sketchfig-index 3    # pick a different held-out example
+  python -m training.sketch_agent.overfit_run --max-steps 1200           # resumes from checkpoint
+  python -m training.sketch_agent.overfit_run --sketchfig-index 3        # pick a different held-out example
+  python -m training.sketch_agent.overfit_run --conditioning-mode canny  # canny/scribble/lineart/anime_lineart
 
 Then:
-  tensorboard --logdir training/sketch_agent/output_overfit/tensorboard
-  training/sketch_agent/output_overfit/eval_previews/step_*/0.png
+  tensorboard --logdir training/sketch_agent/output_overfit/<conditioning_mode>/tensorboard
+  training/sketch_agent/output_overfit/<conditioning_mode>/eval_previews/step_*/0.png
 """
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
-from .config import build_training_config, seed_everything
+from .config import SketchAgentConfig, build_training_config, seed_everything
 from .data import SketchAgentDataset, SyntheticPair
 from .model_loader import SketchAgentModelLoader
 from .trainer import SketchAgentTrainer
@@ -63,21 +64,35 @@ def main() -> None:
         help="which cached held-out SketchFig example to overfit to (0-indexed, sorted "
         "alphabetically - same order as check_sketch_agent.py's TEST_PAIRS)",
     )
+    parser.add_argument(
+        "--conditioning-mode",
+        type=str,
+        default=None,
+        choices=["canny", "scribble", "lineart", "anime_lineart"],
+        help="overrides cfg.conditioning_mode; also namespaces output paths under "
+        "output_overfit/<mode>/ so different modes never collide",
+    )
+    parser.add_argument("--run-name", type=str, default=None, help="overrides cfg.run_name")
     args = parser.parse_args()
 
-    cfg = build_training_config(
-        {
-            "output_dir": OVERFIT_DIR,
-            "checkpoint_dir": f"{OVERFIT_DIR}/checkpoints",
-            "lora_output_dir": f"{OVERFIT_DIR}/lora",
-            "max_steps": args.max_steps,
-            "checkpoint_interval_steps": args.checkpoint_interval_steps,
-            "use_synthetic_data": False,
-            "use_sketchfig": False,
-            "eval_sample_size": 1,
-            "self_resubmit": False,
-        }
-    )
+    conditioning_mode = args.conditioning_mode or SketchAgentConfig().conditioning_mode
+    mode_dir = f"{OVERFIT_DIR}/{conditioning_mode}"
+
+    overrides = {
+        "output_dir": mode_dir,
+        "checkpoint_dir": f"{mode_dir}/checkpoints",
+        "lora_output_dir": f"{mode_dir}/lora",
+        "conditioning_mode": conditioning_mode,
+        "max_steps": args.max_steps,
+        "checkpoint_interval_steps": args.checkpoint_interval_steps,
+        "use_synthetic_data": False,
+        "use_sketchfig": False,
+        "eval_sample_size": 1,
+        "self_resubmit": False,
+    }
+    if args.run_name is not None:
+        overrides["run_name"] = args.run_name
+    cfg = build_training_config(overrides)
     seed_everything(cfg.seed)
 
     pair = _pick_sketchfig_pair(cfg.sketchfig_cache_dir, args.sketchfig_index)

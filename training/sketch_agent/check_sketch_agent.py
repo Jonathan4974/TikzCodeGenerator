@@ -94,7 +94,17 @@ def main() -> None:
     )
     parser.add_argument("--tag", type=str, default=None, help="label for the leaf subfolder under check_previews/<run>/; defaults to the step name (or --image-size for --zero-shot)")
     parser.add_argument("--image-size", type=int, default=None, help="overrides cfg.image_size for this run")
+    parser.add_argument(
+        "--conditioning-mode",
+        type=str,
+        default=None,
+        choices=["canny", "scribble", "lineart", "anime_lineart"],
+        help="overrides cfg.conditioning_mode for this run",
+    )
     args = parser.parse_args()
+
+    if args.conditioning_mode is not None:
+        cfg.conditioning_mode = args.conditioning_mode
 
     image_size = args.image_size or cfg.image_size
     torch.backends.cudnn.deterministic = True
@@ -109,7 +119,9 @@ def main() -> None:
     check_preview_dir = Path(cfg.output_dir) / "check_previews" / run_label / step_label
     check_preview_dir.mkdir(parents=True, exist_ok=True)
 
-    controlnet = ControlNetModel.from_pretrained(cfg.controlnet_model, torch_dtype=torch.bfloat16)
+    controlnet = ControlNetModel.from_pretrained(
+        cfg.controlnet_model, torch_dtype=torch.bfloat16, variant=cfg.controlnet_variant
+    )
     pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
         cfg.base_model, controlnet=controlnet, torch_dtype=torch.bfloat16
     )
@@ -130,6 +142,8 @@ def main() -> None:
             image=prepare_conditioning_image(sketch, cfg),
             controlnet_conditioning_scale=cfg.controlnet_conditioning_scale,
             guidance_scale=cfg.guidance_scale,
+            control_guidance_start=cfg.control_guidance_start,
+            control_guidance_end=cfg.control_guidance_end,
             generator=generator,
             num_inference_steps=30,
             height=image_size,

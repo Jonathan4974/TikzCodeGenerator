@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name="sketch_agent_train"
+#SBATCH --job-name="sketch_agent_zero_shot"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --time=0-08:00:00
+#SBATCH --time=0-01:00:00
 #SBATCH --partition=NORMAL
 #SBATCH --account=stud
 #SBATCH --qos=stud
 #SBATCH --nodelist=node4,node5,node14,node15,node16,node17,node18,node19,node20,node21
 #SBATCH --mail-type=ALL
-#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/slurm-%j.out
+#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/slurm-zero-shot-%j.out
 
 set -euo pipefail
 
@@ -48,7 +48,20 @@ source "$CONDA_SH"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.train
+# Runs all 4 conditioning modes back to back in one job. _1_7 in the tag =
+# controlnet_conditioning_scale=1.0, guidance_scale=7.0 (current config.py values) -> update the tag suffix manually if those change.
+# Pass mode names as args to run a subset instead of all 4,
+# e.g.: sbatch zero_shot.sbatch lineart anime_lineart
+MODES=("$@")
+if [ ${#MODES[@]} -eq 0 ]; then
+  MODES=(canny scribble lineart anime_lineart)
+fi
+
+for mode in "${MODES[@]}"; do
+  echo "=== conditioning_mode=$mode ==="
+  conda run -n "$ENV_NAME" python -m training.sketch_agent.check_sketch_agent \
+    --zero-shot --conditioning-mode "$mode" --tag "${mode}_1_7"
+done
 
 echo "Job finished."
 date

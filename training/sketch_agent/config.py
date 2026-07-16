@@ -19,9 +19,11 @@ class SketchAgentConfig:
 
     # models
     base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    conditioning_mode: str = "canny"  # "scribble" or "canny"
+    conditioning_mode: str = "canny"  # "scribble", "canny", "lineart", or "anime_lineart"
     canny_controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
     scribble_controlnet_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
+    lineart_controlnet_model: str = "TheMistoAI/MistoLine"
+    anime_lineart_controlnet_model: str = "r3gm/controlnet-lineart-anime-sdxl-fp16"
     vae_model: str = "madebyollin/sdxl-vae-fp16-fix"
 
     # LoRA / optimization
@@ -52,6 +54,9 @@ class SketchAgentConfig:
     canny_high_threshold: int = 200
     controlnet_conditioning_scale: float = 1.0
     guidance_scale: float = 7.0
+    # inference-only (like negative_prompt/guidance_scale - no effect on _training_step)
+    control_guidance_start: float = 0.0
+    control_guidance_end: float = 0.7
 
     # data sourcing
     use_synthetic_data: bool = True
@@ -80,7 +85,27 @@ class SketchAgentConfig:
 
     @property
     def controlnet_model(self) -> str:
-        return self.scribble_controlnet_model if self.conditioning_mode == "scribble" else self.canny_controlnet_model
+        try:
+            return {
+                "canny": self.canny_controlnet_model,
+                "scribble": self.scribble_controlnet_model,
+                "lineart": self.lineart_controlnet_model,
+                "anime_lineart": self.anime_lineart_controlnet_model,
+            }[self.conditioning_mode]
+        except KeyError:
+            raise ValueError(
+                f"unknown conditioning_mode {self.conditioning_mode!r}, expected one of: "
+                f"canny, scribble, lineart, anime_lineart"
+            ) from None
+
+    @property
+    def controlnet_variant(self) -> Optional[str]:
+        """Passed as `variant=` to ControlNetModel.from_pretrained().
+        diffusers/controlnet-canny-sdxl-1.0 ships both plain and .fp16. weight files (either works);
+        xinsir/controlnet-scribble-sdxl-1.0 ships ONLY the PLAIN file;
+        TheMistoAI/MistoLine and r3gm/controlnet-lineart-anime-sdxl-fp16 ship ONLY
+        the .fp16. file."""
+        return "fp16" if self.conditioning_mode in ("lineart", "anime_lineart") else None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

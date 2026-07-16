@@ -201,6 +201,8 @@ class SketchAgentTrainer:
                     image=prepare_conditioning_image(sketch, self.cfg),
                     controlnet_conditioning_scale=self.cfg.controlnet_conditioning_scale,
                     guidance_scale=self.cfg.guidance_scale,
+                    control_guidance_start=self.cfg.control_guidance_start,
+                    control_guidance_end=self.cfg.control_guidance_end,
                     generator=generator,
                     num_inference_steps=20,
                     height=self.cfg.image_size,

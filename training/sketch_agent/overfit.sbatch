@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --time=0-01:00:00
+#SBATCH --time=0-02:00:00
 #SBATCH --partition=NORMAL
 #SBATCH --account=stud
 #SBATCH --qos=stud
@@ -37,6 +37,7 @@ export TORCH_HOME="$MODEL_STORE/torch"
 export DREAMSIM_CACHE_DIR="$MODEL_STORE/dreamsim"
 
 export PYTHONPATH="$PROJECT:${PYTHONPATH:-}"
+export PYTHONUNBUFFERED=1
 
 if [[ -f "$ENV_FILE" ]]; then
   HF_TOKEN="$(grep -E '^HF_TOKEN=' "$ENV_FILE" | tail -n1 | cut -d= -f2-)"
@@ -47,7 +48,7 @@ source "$CONDA_SH"
 
 cd "$PROJECT"
 
-conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --max-steps 1200
+conda run -n "$ENV_NAME" python -m training.sketch_agent.overfit_run --max-steps 1200 "$@"
 
 echo "Job finished."
 date

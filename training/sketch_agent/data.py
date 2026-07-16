@@ -36,6 +36,8 @@ def sketch_to_canny(image: Image.Image, low_threshold: int, high_threshold: int)
 
 
 _hed_detector = None
+_anyline_detector = None
+_lineart_anime_detector = None
 
 
 def sketch_to_scribble(image: Image.Image) -> Image.Image:
@@ -49,11 +51,51 @@ def sketch_to_scribble(image: Image.Image) -> Image.Image:
     return _hed_detector(image, scribble=True, detect_resolution=size, image_resolution=size).convert("RGB")
 
 
+def sketch_to_lineart(image: Image.Image) -> Image.Image:
+    """Matches TheMistoAI/MistoLine's own recommended preprocessor"""
+    global _anyline_detector
+    if _anyline_detector is None:
+        from controlnet_aux import AnylineDetector
+
+        _anyline_detector = AnylineDetector.from_pretrained(
+            "TheMistoAI/MistoLine", filename="MTEED.pth", subfolder="Anyline"
+        )
+    size = image.size[0]
+    # AnylineDetector always resizes its output back to the input's own size regardless of
+    # detect_resolution.
+    return _anyline_detector(image, detect_resolution=size).convert("RGB")
+
+
+def sketch_to_anime_lineart(image: Image.Image) -> Image.Image:
+    """Matches r3gm/controlnet-lineart-anime-sdxl-fp16's expected conditioning."""
+    global _lineart_anime_detector
+    if _lineart_anime_detector is None:
+        from controlnet_aux import LineartAnimeDetector
+
+        _lineart_anime_detector = LineartAnimeDetector.from_pretrained("lllyasviel/Annotators")
+    size = image.size[0]
+    return _lineart_anime_detector(image, detect_resolution=size, image_resolution=size).convert("RGB")
+
+
+_CONDITIONING_DISPATCH = {
+    "canny": lambda image, cfg: sketch_to_canny(image, cfg.canny_low_threshold, cfg.canny_high_threshold),
+    "scribble": lambda image, cfg: sketch_to_scribble(image),
+    "lineart": lambda image, cfg: sketch_to_lineart(image),
+    "anime_lineart": lambda image, cfg: sketch_to_anime_lineart(image),
+}
+
+
 def prepare_conditioning_image(image: Image.Image, cfg: "SketchAgentConfig") -> Image.Image:
-    """Single dispatch point to switch modes (canny or scribble)"""
-    if cfg.conditioning_mode == "canny":
-        return sketch_to_canny(image, cfg.canny_low_threshold, cfg.canny_high_threshold)
-    return sketch_to_scribble(image)
+    """Single, uniform dispatch point across all conditioning modes (canny, scribble, lineart,
+    anime_lineart)."""
+    try:
+        dispatch = _CONDITIONING_DISPATCH[cfg.conditioning_mode]
+    except KeyError:
+        raise ValueError(
+            f"unknown conditioning_mode {cfg.conditioning_mode!r}, expected one of: "
+            f"{', '.join(_CONDITIONING_DISPATCH)}"
+        ) from None
+    return dispatch(image, cfg)
 
 
 def iter_datikz_renders(

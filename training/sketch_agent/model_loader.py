@@ -67,7 +67,9 @@ class SketchAgentModelLoader:
         )
         cast_training_params(unet, dtype=torch.float32)
 
-        controlnet = ControlNetModel.from_pretrained(cfg.controlnet_model, torch_dtype=dtype).to("cuda")
+        controlnet = ControlNetModel.from_pretrained(
+            cfg.controlnet_model, torch_dtype=dtype, variant=cfg.controlnet_variant
+        ).to("cuda")
         controlnet.requires_grad_(False)
 
         noise_scheduler = DDPMScheduler.from_pretrained(cfg.base_model, subfolder="scheduler")
