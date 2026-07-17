@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import PlainTextResponse
 
 
 OLLAMA_URL = os.getenv(
@@ -20,9 +19,7 @@ OLLAMA_CONCURRENCY = int(os.getenv("OLLAMA_CONCURRENCY", "1"))
 async def lifespan(app: FastAPI):
     app.state.client = httpx.AsyncClient(timeout=900)
     app.state.semaphore = asyncio.Semaphore(OLLAMA_CONCURRENCY)
-
     yield
-
     await app.state.client.aclose()
 
 
@@ -40,28 +37,23 @@ def clean_tex(code: str) -> str:
         code,
         flags=re.IGNORECASE | re.DOTALL,
     )
-
     if match:
         code = match.group(1).strip()
 
-    document_start = code.find(r"\documentclass")
-    document_end = code.rfind(r"\end{document}")
+    start = code.find(r"\documentclass")
+    end = code.rfind(r"\end{document}")
+    if start >= 0 and end >= start:
+        return code[start:end + len(r"\end{document}")].strip()
 
-    if document_start >= 0 and document_end >= document_start:
-        document_end += len(r"\end{document}")
-        return code[document_start:document_end].strip()
-
-    tikz_start = code.find(r"\begin{tikzpicture}")
-    tikz_end = code.rfind(r"\end{tikzpicture}")
-
-    if tikz_start >= 0 and tikz_end >= tikz_start:
-        tikz_end += len(r"\end{tikzpicture}")
-        return code[tikz_start:tikz_end].strip()
+    start = code.find(r"\begin{tikzpicture}")
+    end = code.rfind(r"\end{tikzpicture}")
+    if start >= 0 and end >= start:
+        return code[start:end + len(r"\end{tikzpicture}")].strip()
 
     return code.strip()
 
 
-@app.post("/generate", response_class=PlainTextResponse)
+@app.post("/generate")
 async def generate(
     request: Request,
     prompt: str = Form(...),
@@ -74,19 +66,13 @@ async def generate(
     thinking_token_multiplier: int = Form(2, ge=1),
     debug: bool = Form(False),
     model: str = Form(...),
-):
+) -> dict:
     image_data = await image.read()
-
     if not image_data:
-        raise HTTPException(
-            status_code=400,
-            detail="Image is empty",
-        )
+        raise HTTPException(status_code=400, detail="Image is empty")
 
     try:
-        description = (
-            await llm_description.read()
-        ).decode("utf-8").strip()
+        description = (await llm_description.read()).decode("utf-8").strip()
     except UnicodeDecodeError as error:
         raise HTTPException(
             status_code=400,
@@ -94,7 +80,6 @@ async def generate(
         ) from error
 
     final_prompt = prompt.strip()
-
     if use_llm_description and description:
         final_prompt += (
             "\n\nAdditionally, here is a description of the image "
@@ -103,22 +88,8 @@ async def generate(
         )
 
     multiplier = thinking_token_multiplier if think else 1
-
     effective_num_predict = num_predict * multiplier
     effective_num_ctx = num_ctx * multiplier
-
-    if debug:
-        print(
-            "\n===== REQUEST SETTINGS =====\n"
-            f"model: {model}\n"
-            f"think: {think}\n"
-            f"num_predict: {effective_num_predict}\n"
-            f"num_ctx: {effective_num_ctx}\n"
-            "\n===== FINAL PROMPT =====\n"
-            f"{final_prompt}\n"
-            "============================\n",
-            flush=True,
-        )
 
     payload = {
         "model": model,
@@ -126,9 +97,7 @@ async def generate(
             {
                 "role": "user",
                 "content": final_prompt,
-                "images": [
-                    base64.b64encode(image_data).decode("ascii")
-                ],
+                "images": [base64.b64encode(image_data).decode("ascii")],
             }
         ],
         "stream": False,
@@ -140,22 +109,28 @@ async def generate(
         },
     }
 
+    if debug:
+        print(
+            "\n===== REQUEST =====\n"
+            f"model: {model}\n"
+            f"think: {think}\n"
+            f"num_predict: {effective_num_predict}\n"
+            f"num_ctx: {effective_num_ctx}\n"
+            f"\n{final_prompt}\n"
+            "===================\n",
+            flush=True,
+        )
+
     try:
         async with request.app.state.semaphore:
             response = await request.app.state.client.post(
                 OLLAMA_URL,
                 json=payload,
             )
-
         response.raise_for_status()
         response_data = response.json()
-
     except httpx.TimeoutException as error:
-        raise HTTPException(
-            status_code=504,
-            detail="Ollama timed out",
-        ) from error
-
+        raise HTTPException(status_code=504, detail="Ollama timed out") from error
     except httpx.HTTPStatusError as error:
         raise HTTPException(
             status_code=502,
@@ -164,13 +139,11 @@ async def generate(
                 f"{error.response.text[:2000]}"
             ),
         ) from error
-
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502,
             detail=f"Ollama request failed: {error}",
         ) from error
-
     except ValueError as error:
         raise HTTPException(
             status_code=502,
@@ -178,72 +151,34 @@ async def generate(
         ) from error
 
     message = response_data.get("message") or {}
-
-    raw_output = str(
-        message.get("content") or ""
-    ).strip()
-
-    thinking_output = str(
-        message.get("thinking") or ""
-    ).strip()
+    raw_output = str(message.get("content") or "").strip()
+    thinking_output = str(message.get("thinking") or "").strip()
+    thinking_length = len(thinking_output)
 
     if debug:
         print(
             "\n===== OLLAMA RESPONSE =====\n"
-            f"done: {response_data.get('done')}\n"
             f"done_reason: {response_data.get('done_reason')}\n"
-            f"prompt_eval_count: "
-            f"{response_data.get('prompt_eval_count')}\n"
             f"eval_count: {response_data.get('eval_count')}\n"
-            f"thinking_length: {len(thinking_output)}\n"
+            f"thinking_length: {thinking_length}\n"
             f"content_length: {len(raw_output)}\n"
-            "\n===== THINKING =====\n"
-            f"{thinking_output}\n"
             "\n===== RAW OUTPUT =====\n"
             f"{raw_output}\n"
             "===========================\n",
             flush=True,
         )
 
-    if not raw_output:
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "message": "Ollama returned empty message.content",
-                "model": model,
-                "think": think,
-                "done_reason": response_data.get("done_reason"),
-                "prompt_eval_count": response_data.get(
-                    "prompt_eval_count"
-                ),
-                "eval_count": response_data.get("eval_count"),
-                "thinking_length": len(thinking_output),
-                "num_predict": effective_num_predict,
-                "num_ctx": effective_num_ctx,
-            },
-        )
-
     output = clean_tex(raw_output)
-
     if not output:
         raise HTTPException(
             status_code=502,
             detail={
-                "message": (
-                    "Ollama returned content, but no usable "
-                    "LaTeX remained after cleaning"
-                ),
-                "model": model,
-                "raw_output_length": len(raw_output),
+                "message": "Ollama returned no usable LaTeX output",
+                "thinking_length": thinking_length,
             },
         )
 
-    if debug:
-        print(
-            "\n===== CLEANED LATEX =====\n"
-            f"{output}\n"
-            "=========================\n",
-            flush=True,
-        )
-
-    return output
+    return {
+        "output": output,
+        "thinking_length": thinking_length,
+    }

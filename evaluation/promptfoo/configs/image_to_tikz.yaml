@@ -42,5 +42,7 @@ defaultTest:
     - type: python
       value: file://../assertions/tikz_relative_length_output_reference.py
       metric: relative_length_similarity
-
+    - type: python
+      value: file://../assertions/tikz_thinking_length.py
+      metric: thinking_length
 tests: file://../tests.py:generate_tests
