@@ -5,7 +5,13 @@
     method: POST
     timeout: 900000
     validateStatus: "status >= 200 && status < 300"
-    transformResponse: "text"
+    transformResponse: |
+      ({
+        output: json.output ?? "",
+        metadata: {
+          thinking_length: Number(json.thinking_length ?? 0)
+        }
+      })
     multipart:
       parts:
         - kind: file
@@ -63,7 +69,13 @@
     method: POST
     timeout: 900000
     validateStatus: "status >= 200 && status < 300"
-    transformResponse: "text"
+    transformResponse: |
+      ({
+        output: json.output ?? "",
+        metadata: {
+          thinking_length: Number(json.thinking_length ?? 0)
+        }
+      })
     multipart:
       parts:
         - kind: file
@@ -121,7 +133,13 @@
     method: POST
     timeout: 900000
     validateStatus: "status >= 200 && status < 300"
-    transformResponse: "text"
+    transformResponse: |
+      ({
+        output: json.output ?? "",
+        metadata: {
+          thinking_length: Number(json.thinking_length ?? 0)
+        }
+      })
     multipart:
       parts:
         - kind: file
@@ -186,7 +204,6 @@
           thinking_length: Number(json.thinking_length ?? 0)
         }
       })
-      
     multipart:
       parts:
         - kind: file
