@@ -40,6 +40,22 @@
           name: model
           value: "gemma4:31b-it-q4_K_M"
 
+        - kind: field
+          name: think
+          value: "true"
+
+        - kind: field
+          name: num_predict
+          value: "8192"
+
+        - kind: field
+          name: num_ctx
+          value: "16384"
+
+        - kind: field
+          name: thinking_token_multiplier
+          value: "2"
+
 - id: http
   label: "gemma4:12b-it-bf16"
   config:
@@ -81,6 +97,22 @@
         - kind: field
           name: model
           value: "gemma4:12b-it-bf16"
+
+        - kind: field
+          name: think
+          value: "true"
+
+        - kind: field
+          name: num_predict
+          value: "8192"
+
+        - kind: field
+          name: num_ctx
+          value: "16384"
+
+        - kind: field
+          name: thinking_token_multiplier
+          value: "2"
 
 - id: http
   label: "qwen3-vl:8b-instruct-bf16"
@@ -124,6 +156,22 @@
           name: model
           value: "qwen3-vl:8b-instruct-bf16"
 
+        - kind: field
+          name: think
+          value: "true"
+
+        - kind: field
+          name: num_predict
+          value: "8192"
+
+        - kind: field
+          name: num_ctx
+          value: "16384"
+
+        - kind: field
+          name: thinking_token_multiplier
+          value: "2"
+
 - id: http
   label: "qwen3.6:35b-a3b"
   config:
@@ -166,6 +214,22 @@
           name: model
           value: "qwen3.6:35b-a3b"
 
+        - kind: field
+          name: think
+          value: "true"
+
+        - kind: field
+          name: num_predict
+          value: "8192"
+
+        - kind: field
+          name: num_ctx
+          value: "16384"
+
+        - kind: field
+          name: thinking_token_multiplier
+          value: "2"
+
 - id: http
   label: geotikzbridge-8b
   config:
@@ -198,7 +262,7 @@
 
         - kind: field
           name: use_llm_description
-          value: "true"
+          value: "false"
 
         - kind: field
           name: debug

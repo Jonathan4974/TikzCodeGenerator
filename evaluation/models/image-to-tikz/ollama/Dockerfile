@@ -9,7 +9,8 @@ RUN apt-get update \
         fastapi \
         uvicorn \
         requests \
-        python-multipart
+        python-multipart \
+        httpx
 
 COPY app.py .
 

@@ -1,9 +1,11 @@
+import asyncio
 import base64
 import os
 import re
+from contextlib import asynccontextmanager
 
-import requests
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+import httpx
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 
 
@@ -11,162 +13,237 @@ OLLAMA_URL = os.getenv(
     "OLLAMA_URL",
     "http://127.0.0.1:11434/api/chat",
 )
+OLLAMA_CONCURRENCY = int(os.getenv("OLLAMA_CONCURRENCY", "1"))
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.client = httpx.AsyncClient(timeout=900)
+    app.state.semaphore = asyncio.Semaphore(OLLAMA_CONCURRENCY)
+
+    yield
+
+    await app.state.client.aclose()
 
 
-LATEX_BLOCK_PATTERN = re.compile(
-    r"```(?:latex|tex)[ \t]*\r?\n?(.*?)```",
-    flags=re.IGNORECASE | re.DOTALL,
-)
-
-GENERIC_BLOCK_PATTERN = re.compile(
-    r"```[a-zA-Z0-9_-]*[ \t]*\r?\n?(.*?)```",
-    flags=re.DOTALL,
-)
+app = FastAPI(lifespan=lifespan)
 
 
 def clean_tex(code: str) -> str:
-    
     if not code:
         return ""
 
     code = code.strip().lstrip("\ufeff")
 
-    # Bevorzugt explizite ```latex- oder ```tex-Blöcke.
-    match = LATEX_BLOCK_PATTERN.search(code)
-
-    # Fallback für generische Markdown-Codeblöcke.
-    if not match:
-        match = GENERIC_BLOCK_PATTERN.search(code)
+    match = re.search(
+        r"```[a-zA-Z0-9_-]*[ \t]*\r?\n?(.*?)```",
+        code,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
 
     if match:
         code = match.group(1).strip()
 
-    # Vollständiges LaTeX-Dokument extrahieren.
     document_start = code.find(r"\documentclass")
     document_end = code.rfind(r"\end{document}")
 
-    if document_start >= 0 and document_end >= 0:
+    if document_start >= 0 and document_end >= document_start:
         document_end += len(r"\end{document}")
         return code[document_start:document_end].strip()
 
-    # Fallback für reine TikZ-Fragmente.
     tikz_start = code.find(r"\begin{tikzpicture}")
     tikz_end = code.rfind(r"\end{tikzpicture}")
 
-    if tikz_start >= 0 and tikz_end >= 0:
+    if tikz_start >= 0 and tikz_end >= tikz_start:
         tikz_end += len(r"\end{tikzpicture}")
         return code[tikz_start:tikz_end].strip()
-
-    # Übrig gebliebene Markdown-Fences entfernen.
-    code = re.sub(
-        r"^\s*```[a-zA-Z0-9_-]*\s*",
-        "",
-        code,
-        flags=re.IGNORECASE,
-    )
-    code = re.sub(r"\s*```\s*$", "", code)
 
     return code.strip()
 
 
 @app.post("/generate", response_class=PlainTextResponse)
-def generate(
+async def generate(
+    request: Request,
     prompt: str = Form(...),
     image: UploadFile = File(...),
     llm_description: UploadFile = File(...),
     use_llm_description: bool = Form(True),
+    think: bool = Form(False),
+    num_predict: int = Form(8192, ge=1),
+    num_ctx: int = Form(16384, ge=1),
+    thinking_token_multiplier: int = Form(2, ge=1),
     debug: bool = Form(False),
     model: str = Form(...),
 ):
-    try:
-        image_b64 = base64.b64encode(
-            image.file.read()
-        ).decode("utf-8")
+    image_data = await image.read()
 
-        description = (
-            llm_description.file.read()
-            .decode("utf-8")
-            .strip()
-        )
-
-        final_prompt = prompt.strip()
-
-        if use_llm_description and description:
-            final_prompt += (
-                "\n\nAdditionally, here is a description of the image "
-                "with some creation hints:\n"
-                f"{description}"
-            )
-
-        if debug:
-            print(
-                "\n===== FINAL PROMPT =====\n"
-                f"{final_prompt}\n"
-                "========================\n",
-                flush=True,
-            )
-
-        payload = {
-            "model": model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": final_prompt,
-                    "images": [image_b64],
-                }
-            ],
-            "stream": False,
-            "options": {
-                "temperature": 0,
-                "num_predict": 8192,
-            },
-        }
-
-        response = requests.post(
-            OLLAMA_URL,
-            json=payload,
-            timeout=900,
-        )
-        response.raise_for_status()
-
-        raw_output = (
-            response.json()
-            .get("message", {})
-            .get("content", "")
-        )
-
-        if debug:
-            print(
-                "\n===== raw_output =====\n"
-                f"{raw_output}\n"
-                "========================\n",
-                flush=True,
-            )
-
-        output = clean_tex(raw_output)
-
-        if not output:
-            raise HTTPException(
-                status_code=502,
-                detail="Ollama returned no usable LaTeX output",
-            )
-
-        if debug:
-            print(
-                "\n===== CLEANED LATEX =====\n"
-                f"{output}\n"
-                "=========================\n",
-                flush=True,
-            )
-
-        return output
-
-    except HTTPException:
-        raise
-    except Exception as error:
+    if not image_data:
         raise HTTPException(
-            status_code=500,
-            detail=str(error),
+            status_code=400,
+            detail="Image is empty",
+        )
+
+    try:
+        description = (
+            await llm_description.read()
+        ).decode("utf-8").strip()
+    except UnicodeDecodeError as error:
+        raise HTTPException(
+            status_code=400,
+            detail="LLM description must be UTF-8",
         ) from error
+
+    final_prompt = prompt.strip()
+
+    if use_llm_description and description:
+        final_prompt += (
+            "\n\nAdditionally, here is a description of the image "
+            "with some creation hints:\n"
+            f"{description}"
+        )
+
+    multiplier = thinking_token_multiplier if think else 1
+
+    effective_num_predict = num_predict * multiplier
+    effective_num_ctx = num_ctx * multiplier
+
+    if debug:
+        print(
+            "\n===== REQUEST SETTINGS =====\n"
+            f"model: {model}\n"
+            f"think: {think}\n"
+            f"num_predict: {effective_num_predict}\n"
+            f"num_ctx: {effective_num_ctx}\n"
+            "\n===== FINAL PROMPT =====\n"
+            f"{final_prompt}\n"
+            "============================\n",
+            flush=True,
+        )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": final_prompt,
+                "images": [
+                    base64.b64encode(image_data).decode("ascii")
+                ],
+            }
+        ],
+        "stream": False,
+        "think": think,
+        "options": {
+            "temperature": 0,
+            "num_predict": effective_num_predict,
+            "num_ctx": effective_num_ctx,
+        },
+    }
+
+    try:
+        async with request.app.state.semaphore:
+            response = await request.app.state.client.post(
+                OLLAMA_URL,
+                json=payload,
+            )
+
+        response.raise_for_status()
+        response_data = response.json()
+
+    except httpx.TimeoutException as error:
+        raise HTTPException(
+            status_code=504,
+            detail="Ollama timed out",
+        ) from error
+
+    except httpx.HTTPStatusError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Ollama returned HTTP {error.response.status_code}: "
+                f"{error.response.text[:2000]}"
+            ),
+        ) from error
+
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ollama request failed: {error}",
+        ) from error
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=502,
+            detail="Ollama returned invalid JSON",
+        ) from error
+
+    message = response_data.get("message") or {}
+
+    raw_output = str(
+        message.get("content") or ""
+    ).strip()
+
+    thinking_output = str(
+        message.get("thinking") or ""
+    ).strip()
+
+    if debug:
+        print(
+            "\n===== OLLAMA RESPONSE =====\n"
+            f"done: {response_data.get('done')}\n"
+            f"done_reason: {response_data.get('done_reason')}\n"
+            f"prompt_eval_count: "
+            f"{response_data.get('prompt_eval_count')}\n"
+            f"eval_count: {response_data.get('eval_count')}\n"
+            f"thinking_length: {len(thinking_output)}\n"
+            f"content_length: {len(raw_output)}\n"
+            "\n===== THINKING =====\n"
+            f"{thinking_output}\n"
+            "\n===== RAW OUTPUT =====\n"
+            f"{raw_output}\n"
+            "===========================\n",
+            flush=True,
+        )
+
+    if not raw_output:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Ollama returned empty message.content",
+                "model": model,
+                "think": think,
+                "done_reason": response_data.get("done_reason"),
+                "prompt_eval_count": response_data.get(
+                    "prompt_eval_count"
+                ),
+                "eval_count": response_data.get("eval_count"),
+                "thinking_length": len(thinking_output),
+                "num_predict": effective_num_predict,
+                "num_ctx": effective_num_ctx,
+            },
+        )
+
+    output = clean_tex(raw_output)
+
+    if not output:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": (
+                    "Ollama returned content, but no usable "
+                    "LaTeX remained after cleaning"
+                ),
+                "model": model,
+                "raw_output_length": len(raw_output),
+            },
+        )
+
+    if debug:
+        print(
+            "\n===== CLEANED LATEX =====\n"
+            f"{output}\n"
+            "=========================\n",
+            flush=True,
+        )
+
+    return output

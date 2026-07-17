@@ -60,11 +60,15 @@ class Promptfoo:
     unload_ollama: bool = True
     ollama_url: str = "http://127.0.0.1:11434"
     provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun("gemma4:31b-it-q4_K_M", "gemma4:31b-it-q4_K_M"),
-        ProviderRun("gemma4:12b-it-bf16", "gemma4:12b-it-bf16"),
-        ProviderRun("qwen3-vl:8b-instruct-bf16", "qwen3-vl:8b-instruct-bf16"),
-        ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b")
+        ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b"),
     )
+    
+    #provider_order: tuple[ProviderRun, ...] = (
+    #    ProviderRun("gemma4:31b-it-q4_K_M", "gemma4:31b-it-q4_K_M"),
+    #    ProviderRun("gemma4:12b-it-bf16", "gemma4:12b-it-bf16"),
+    #    ProviderRun("qwen3-vl:8b-instruct-bf16", "qwen3-vl:8b-instruct-bf16"),
+    #    ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b")
+    #)
 
 
 @dataclass(frozen=True)
@@ -104,7 +108,7 @@ METRICS = {
     "lpips": {"threshold": 0.80, "net_type": "alex"},
     "dreamsim": {"threshold": 0.75},
     "dists": {"threshold": 0.80},
-    "crystalbleu": {"threshold": 0.10, "k": 500, "n": 4, "use_cache": True},
+    "crystalbleu": {"threshold": 0.10, "k": 500, "n": 4, "smoothing": True, "use_cache": True},
     "ted": {"threshold": 0.50},
     "relative_length": {"threshold": 0.80},
 }

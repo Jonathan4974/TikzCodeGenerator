@@ -4,7 +4,7 @@ from itertools import chain, tee
 from pathlib import Path
 import pickle
 
-from crystalbleu import corpus_bleu
+from crystalbleu import SmoothingFunction, corpus_bleu
 from pygments.lexers.markup import TexLexer
 from pygments.token import Comment, Name, Text
 from sacremoses import MosesTokenizer
@@ -66,16 +66,40 @@ def compute_crystalbleu_score(
     corpus_dir: str | Path,
     k: int = 500,
     n: int = 4,
+    smoothing: bool = True,
     use_cache: bool = True,
 ) -> float:
     corpus = load_corpus(corpus_dir)
+
     if not corpus:
         raise ValueError(f"CrystalBLEU corpus is empty: {corpus_dir}")
+
     if not reference_code.strip() or not generated_code.strip():
         raise ValueError("Reference or generated code is empty")
 
-    return float(corpus_bleu(
-        list_of_references=[[tokenize(reference_code)]],
-        hypotheses=[tokenize(generated_code)],
-        ignoring=shared_ngrams(corpus, k, n, use_cache),
-    ))
+    if n < 1:
+        raise ValueError("n must be at least 1")
+
+    reference_tokens = tokenize(reference_code)
+    generated_tokens = tokenize(generated_code)
+
+    smoothing_function = (
+        SmoothingFunction().method1
+        if smoothing
+        else None
+    )
+
+    return float(
+        corpus_bleu(
+            list_of_references=[[reference_tokens]],
+            hypotheses=[generated_tokens],
+            weights=tuple(1 / n for _ in range(n)),
+            ignoring=shared_ngrams(
+                corpus=corpus,
+                k=k,
+                n=n,
+                use_cache=use_cache,
+            ),
+            smoothing_function=smoothing_function,
+        )
+    )
