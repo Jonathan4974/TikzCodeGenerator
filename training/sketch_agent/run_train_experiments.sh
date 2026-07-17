@@ -13,7 +13,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 MAX_STEPS="${MAX_STEPS:-1000}"
-TIME_BUDGET="${TIME_BUDGET:-02:00:00}"
+TIME_BUDGET="${TIME_BUDGET:-08:00:00}"
+MIXED_SKETCHFIG_FRACTION="${MIXED_SKETCHFIG_FRACTION:-0.25}"
 
 COMBOS=("$@")
 if [ ${#COMBOS[@]} -eq 0 ]; then
@@ -23,14 +24,15 @@ fi
 for combo in "${COMBOS[@]}"; do
   mode="${combo%%:*}"
   data_tag="${combo##*:}"
+  extra_args=()
   case "$data_tag" in
-    sketchfig_only) synth_flag="--no-use-synthetic-data" ;;
-    mixed) synth_flag="--use-synthetic-data" ;;
+    sketchfig_only) extra_args+=(--no-use-synthetic-data) ;;
+    mixed) extra_args+=(--use-synthetic-data --sketchfig-train-fraction "$MIXED_SKETCHFIG_FRACTION") ;;
     *) echo "unknown data config '$data_tag' in '$combo' - expected sketchfig_only or mixed" >&2; exit 1 ;;
   esac
 
   run_name="train_${mode}_${data_tag}_$(date +%Y%m%d-%H%M%S)"
-  echo "Submitting train.sbatch for conditioning_mode=$mode data=$data_tag (run-name=$run_name, max-steps=$MAX_STEPS, time=$TIME_BUDGET) ..."
+  echo "Submitting train.sbatch for conditioning_mode=$mode data=$data_tag (run-name=$run_name, max-steps=$MAX_STEPS, time=$TIME_BUDGET, extra=${extra_args[*]}) ..."
   sbatch --job-name="sketch_agent_train_${mode}_${data_tag}" --time="$TIME_BUDGET" training/sketch_agent/train.sbatch \
-    --conditioning-mode "$mode" $synth_flag --max-steps "$MAX_STEPS" --run-name "$run_name"
+    --conditioning-mode "$mode" "${extra_args[@]}" --max-steps "$MAX_STEPS" --run-name "$run_name"
 done

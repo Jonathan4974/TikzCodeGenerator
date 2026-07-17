@@ -36,6 +36,12 @@ def main() -> None:
         default=None,
         help="overrides cfg.use_synthetic_data (--no-use-synthetic-data for SketchFig-only training)",
     )
+    parser.add_argument(
+        "--sketchfig-train-fraction",
+        type=float,
+        default=None,
+        help="overrides cfg.sketchfig_train_fraction (fraction of SketchFig used for training vs. held out for eval)",
+    )
     args = parser.parse_args()
 
     defaults = SketchAgentConfig()
@@ -57,6 +63,8 @@ def main() -> None:
         overrides["run_name"] = args.run_name
     if args.max_steps is not None:
         overrides["max_steps"] = args.max_steps
+    if args.sketchfig_train_fraction is not None:
+        overrides["sketchfig_train_fraction"] = args.sketchfig_train_fraction
     cfg = build_training_config(overrides)
     seed_everything(cfg.seed)
 
