@@ -1,27 +1,11 @@
 description: Image-to-TikZ benchmark
 
 prompts:
-  - image-to-tikz
+  - id: file://prompt.txt
+    label: image-to-tikz
 
-providers:
-  - id: http
-    label: detikzify-2-5-8b
-    config:
-      url: "http://127.0.0.1:8000/detikzify"
-      method: POST
-      multipart:
-        parts:
-          - kind: file
-            name: image
-            filename: input.png
-            contentType: image/png
-            source:
-              type: path
-              path: "file://{{reference_image}}"
-          - kind: field
-            name: timeout
-            value: 60
-      transformResponse: json.tikz
+providers: 
+  - file://providers.yaml
 
 defaultTest:
   assert:

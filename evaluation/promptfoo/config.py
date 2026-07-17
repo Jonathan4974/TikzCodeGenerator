@@ -45,10 +45,26 @@ class Render:
 
 
 @dataclass(frozen=True)
+class ProviderRun:
+    label: str
+    ollama_model: str | None = None
+
+
+@dataclass(frozen=True)
 class Promptfoo:
-    config_file: Path = ROOT / "configs" / "image_to_tikz_ollama.yaml"
+    config_file: Path = ROOT / "configs" / "image_to_tikz.yaml"
     max_concurrency: int = 1
+    assertions_max_concurrency: int = 4
     view_port: int = 15500
+    sequential_providers: bool = True
+    unload_ollama: bool = True
+    ollama_url: str = "http://127.0.0.1:11434"
+    provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun("gemma4:31b-it-q4_K_M", "gemma4:31b-it-q4_K_M"),
+        ProviderRun("gemma4:12b-it-bf16", "gemma4:12b-it-bf16"),
+        ProviderRun("qwen3-vl:8b-instruct-bf16", "qwen3-vl:8b-instruct-bf16"),
+        ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b")
+    )
 
 
 @dataclass(frozen=True)
@@ -121,6 +137,9 @@ def apply_runtime_environment() -> dict[str, str]:
         "PROMPTFOO_DISABLE_TELEMETRY": "1",
         "PROMPTFOO_DISABLE_UPDATE": "1",
         "PROMPTFOO_CONFIG_DIR": str(PATHS.promptfoo_db),
+        "PROMPTFOO_ASSERTIONS_MAX_CONCURRENCY": str(
+            PROMPTFOO.assertions_max_concurrency
+        ),
         "HF_HOME": str(PATHS.model_cache / "huggingface"),
         "HUGGINGFACE_HUB_CACHE": str(PATHS.model_cache / "huggingface" / "hub"),
         "HF_HUB_CACHE": str(PATHS.model_cache / "huggingface" / "hub"),
