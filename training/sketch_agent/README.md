@@ -21,15 +21,16 @@ the Structure/Text Agent
 - `real_data.py` - SketchFig train/eval split loading.
 - `model_loader.py` - loads SDXL UNet/text encoders/VAE/ControlNet, freezes everything except the LoRA adapter
 - `trainer.py` - the training loop: checkpoint/resume via `accelerate`, self-resubmit before the 8h SLURM limit, TensorBoard logging, and periodic eval against the real held-out SketchFig examples.
-- `train.py` - `main()` wiring config -> dataset -> model -> trainer together.
+- `train.py` - `main()` wiring config -> dataset -> model -> trainer together. Takes `--conditioning-mode`/`--use-synthetic-data`/`--no-use-synthetic-data`/`--max-steps`/`--run-name`/`--time-limit-hours`; the first two also namespace output under `output/experiments/<mode>_<sketchfig_only|mixed>/` so different experiments never collide.
 - `vram_dry_run.py` - loads the real model bundle and runs a few forward/backward steps on random tensors to check VRAM headroom before committing to a full run. Takes `--image-size` to test headroom at a different resolution than `cfg.image_size`.
-- `overfit_run.py` - overfit-to-1-sample
+- `overfit_run.py` - overfit-to-1-sample on a real SketchFig pair. Takes `--conditioning-mode`/`--sketchfig-index`/`--max-steps`; output namespaced under `output_overfit/<mode>/`.
 - `smoke_run.py` - tiny end-to-end run to test things before a full run.
-- `check_sketch_agent.py` - manual check script: loads the trained LoRA weights, runs a few real held-out SketchFig examples, prints pixel-CC/SigLIP/DreamSim scores. `--zero-shot` skips loading any LoRA adapter and runs a no-training baseline.
+- `check_sketch_agent.py` - manual check script: loads the trained LoRA weights, runs a few real held-out SketchFig examples, prints pixel-CC/SigLIP/DreamSim scores. `--zero-shot` skips loading any LoRA adapter and runs a no-training baseline. Also takes `--conditioning-mode`.
 - `eval.py` - `pixel_congruence_coefficient` (cheap secondary metric). SigLIP/DreamSim are called directly from `evaluation/promptfoo/pf_utils`.
 - `ultrasketch_methods.py` - UltraSketch/displacement-field helpers.
 - `setup_env.sh` - one-time conda env setup
-- `train.sbatch` - SLURM launcher.
+- `train.sbatch` / `overfit.sbatch` / `zero_shot.sbatch` - SLURM launchers for `train.py` / `overfit_run.py` / `check_sketch_agent.py --zero-shot` respectively; each forwards extra CLI args via `"$@"`.
+- `run_train_experiments.sh` / `run_all_overfits.sh` - submit one `train.sbatch`/`overfit.sbatch` job per `<mode>[:data-config]` combo passed as args. See each script's own header comment for usage.
 - `tests/` - tests for the parts that don't need a GPU (Canny/displacement math, checkpoint-resolution logic, SketchFig split math). The two GPU/network-dependent calls (`iter_datikz_renders`, `load_ultrasketch_pipeline`) are mocked via `unittest.mock.patch`.
 
 ## Additional Notes
@@ -38,7 +39,8 @@ the Structure/Text Agent
 - Each TensorBoard run logs to its own named subdirectory under `output/tensorboard/<run_name>`. A resubmit that resumes from a checkpoint reuses the same run name; otherwise a new run name will created `<timestamp>_job<SLURM_JOB_ID>` by default, or set with `cfg.run_name` to specific name.
 - `output/lora/<run_name>/step_XXXXXX/` and `output/eval_previews/<run_name>/step_XXXXXX/` are namespaced by `run_name`. `check_sketch_agent.py` mirrors this: `output/check_previews/<run_name>/<step>/` (zero-shot uses `zero_shot`, leaf-labeled by `--image-size`), defaulting `--run-name` to whichever run dir under `output/lora/` was modified most recently, or pass it explicitly to check an older run. `--tag` only overrides the leaf label, not the run.
 - `train.py` takes `--run-name` so this same name can also drive the log filename for local runs.
-- On job completion (reaching `max_steps`), `trainer.py` deletes `output/checkpoints/` and the run-name file (`checkpoint_utils.clear_resumable_state`). Set `cfg.save_checkpoints = False` to skip `accelerate` checkpoint saving entirely.
+- On job completion (reaching `max_steps`), `trainer.py` deletes `output/checkpoints/` (or `output/experiments/<mode>_<data-tag>/checkpoints/` when `--conditioning-mode`/`--use-synthetic-data` is set) and the run-name file (`checkpoint_utils.clear_resumable_state`). Set `cfg.save_checkpoints = False` to skip `accelerate` checkpoint saving entirely.
+- `--conditioning-mode`/`--use-synthetic-data` on `train.py` (and `--conditioning-mode` on `overfit_run.py`) namespace `output_dir`/`checkpoint_dir`/`lora_output_dir` by experiment (`output/experiments/<mode>_<sketchfig_only|mixed>/`, `output_overfit/<mode>/`).
 
 ## Running
 ```bash
@@ -46,7 +48,9 @@ bash training/sketch_agent/setup_env.sh                                         
 python -m training.sketch_agent.vram_dry_run                                                              # check VRAM headroom before a full run
 python -m training.sketch_agent.vram_dry_run --image-size 1024                                            # at a different resolutions
 python -m training.sketch_agent.overfit_run --max-steps 600                                               # overfit-to-1-sample
-sbatch training/sketch_agent/train.sbatch                                                                 # submit the real training job
+sbatch training/sketch_agent/train.sbatch                                                                 # submit the real (full-scale) training job
+bash training/sketch_agent/run_train_experiments.sh                                                       # bounded canny+lineart, SketchFig-only comparison runs
+bash training/sketch_agent/run_train_experiments.sh canny:mixed lineart:sketchfig_only                    # or specify combos explicitly
 tensorboard --logdir training/sketch_agent/output/tensorboard                                             # watch loss/eval curves live
 python -m training.sketch_agent.check_sketch_agent                                                        # watch scores on real held-out examples once trained
 python -m training.sketch_agent.check_sketch_agent --run-name <name>                                      # check a specific run instead of the most recently modified one

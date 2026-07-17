@@ -49,7 +49,7 @@ conda activate "$ENV_NAME"
 
 cd "$PROJECT"
 
-python -m training.sketch_agent.train
+python -m training.sketch_agent.train "$@"
 
 echo "Job finished."
 date
