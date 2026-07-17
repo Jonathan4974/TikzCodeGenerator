@@ -1,189 +1,87 @@
-# Promptfoo with Enroot
+# Image-to-TikZ Benchmark
 
-## 0. Convert Docker `.tar` to Enroot `.sqsh`
+## Setup
 
-Run this on a machine that has **Docker + Enroot** installed. E.g. your local machine.
+First, install TeX Live Full:
 
 ```bash
-docker build -t promptfoo-tex .
+sudo sh scripts/install_texlive_full.sh
 ```
 
-Then import the Docker image into Enroot.
-
-Adjust the image name/tag according to the output of `docker images`:
+Then create the Conda environment and install Promptfoo:
 
 ```bash
-enroot import --output promptfoo-tex.sqsh dockerd://promptfoo-tex:latest
+conda env create -f environment.yml
+conda activate promptfoo-tikz
+npm install
 ```
 
-Copy the `.sqsh` file to the cluster.
+After that, only adjust the paths and benchmark settings in `config.py`. By default, the following files and directories are expected:
 
----
-
-## 1. Create the Enroot container on the cluster
-
-cd ~/projects/
-
-mkdir -p .enroot/{data,cache,tmp}
-
-export ENROOT_DATA_PATH="$PWD/.enroot/data"
-export ENROOT_CACHE_PATH="$PWD/.enroot/cache"
-export ENROOT_TEMP_PATH="$PWD/.enroot/tmp"
-
-```bash
-enroot create --name promptfoo promptfoo-tex.sqsh
+```text
+data/image_manifest.csv
+data/images/*
+data/references/*
+data/benchmark_corpus/*.txt
 ```
 
----
+The CSV file must contain at least the columns `reference_image` and `reference_code`. Absolute paths are kept unchanged. Relative paths are resolved relative to the manifest file. Legacy container paths under `/images` and `/references` are automatically mapped to the central data directories.
 
-## 2. Create required host directories
+## Running the Benchmark
 
-The host-side directories used in `--mount` must already exist.
+The model server must be running at the URL configured in `config.py`.
 
 ```bash
-cd /usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo
-
-mkdir -p result/promptfoo-db
-mkdir -p result/generated_images
+python run.py eval
+python run.py view
 ```
 
-Check that all required host paths exist:
+Additional Promptfoo arguments are forwarded:
 
 ```bash
-ls -lah /usr/prakt/s0030/projects/models
-ls -lah /usr/prakt/s0030/projects/data/benchmark_data/manifest_splits/image_manifest_1.csv
-ls -lah /usr/prakt/s0030/projects/data/benchmark_data/benchmark_corpus
-ls -lah /usr/prakt/s0030/projects/data/benchmark_data/images
-ls -lah /usr/prakt/s0030/projects/data/benchmark_data/references
+python run.py eval --no-cache
+python run.py eval --watch
 ```
 
----
+## Configuration
 
-## 3. TMUX commands
-Start a new tmux:
-```bash
-tmux new -s promptfoo_splits
+- `PATHS`: Data, results, and cache directories
+- `RENDER`: TeX Live path, engines, timeout, DPI, and image size
+- `PROMPTFOO`: Providers, concurrency, and UI port
+- `BENCHMARK.text_replace_metrik`: Replaces TikZ node text with `aaaa`, `aaab`, ... before all metrics are calculated
+- `MODELS`: Model names and compute device
+- `METRICS`: Central thresholds and metric parameters
+- `DEBUG`: Debug images and tracebacks
+
+The default TeX Live installation is:
+
+```python
+texlive_root = Path("/usr/local/texlive/2026")
+texlive_platform = "x86_64-linux"
 ```
 
-To exit: Ctrl-b, then d
+The resulting path `/usr/local/texlive/2026/bin/x86_64-linux` is prepended to `PATH` before the benchmark starts. Change `texlive_platform` when using a different architecture. `texlive-core` is intentionally not included in the Conda environment so that only the complete TeX Live installation is used.
 
-to join a running tmux:
+Secrets must not be stored in `config.py`. When a provider requires an API key, set it only in the active shell or with `conda env config vars set ...`.
 
-```bash
-tmux attach -t promptfoo_splits
+## GPU
+
+`requirements.txt` installs the standard PyTorch distribution. If your cluster requires a specific CUDA wheel, reinstall PyTorch after creating the Conda environment according to the official PyTorch installation instructions. All metrics automatically use CUDA when it is available.
+
+## Security
+
+Model-generated TeX code is untrusted. As in the original project, rendering uses a tolerant LaTeX fallback and a timeout, but it does not provide a complete operating-system-level sandbox. Only render unknown TeX code in an appropriately isolated environment.
+
+## Text-Independent Metrics
+
+Enable the mode in `config.py`:
+
+```python
+@dataclass(frozen=True)
+class Benchmark:
+    text_replace_metrik: bool = True
 ```
 
-List running tmux:
-```bash
-tmux ls
-```
+When enabled, non-empty TikZ node contents in the reference and model output are replaced independently according to their order with `aaaa`, `aaab`, `aaac`, and so on.
 
-Stop a tmux:
-```bash
-exit
-```
-or 
-```bash
-tmux kill-session -t promptfoo_splits
-```
-
-## 4. Make GPUs accessible inside of the container
-Run these two commands:
-
-```bash
-export NVIDIA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-all}"
-export NVIDIA_DRIVER_CAPABILITIES=compute,utility
-```
-
-## 5. Start Promptfoo
-
-DeTikZify must already be running.
-
-```bash
-cd /usr/prakt/s0030/projects/tikzcodegenerator/evaluation/promptfoo
-
-enroot start --root --rw \
-  --mount "$PWD:/app" \
-  --mount "$PWD/result/promptfoo-db:/root/.promptfoo" \
-  --mount "$PWD/result/generated_images:/generated_images" \
-  --mount "/usr/prakt/s0030/projects/data/benchmark_data/manifest_splits:/manifest_splits" \
-  --mount "/usr/prakt/s0030/projects/data/benchmark_data/benchmark_corpus:/crystalbleu_corpus" \
-  --mount "/usr/prakt/s0030/projects/data/benchmark_data/images:/images" \
-  --mount "/usr/prakt/s0030/projects/data/benchmark_data/references:/references" \
-  --mount "/usr/prakt/s0030/projects/models:/models" \
-  promptfoo \
-  sh -lc '
-    cd /app
-    ln -sf /manifest_splits/image_manifest.csv /image_manifest.csv
-    set -a
-    . ./.env
-    set +a
-    promptfoo eval -c configs/image_to_tikz_promptfooconfig_detikzify_2_5_8b.yaml -j 1 --watch &
-    sleep 5
-    promptfoo view --port 15500 --no
-  '
-```
-
----
-
-## 6. Open Promptfoo UI
-
-If running on the same machine:
-
-```bash
-http://127.0.0.1:15500
-```
-
-If running on a cluster node, use an SSH tunnel if needed.
-
-
-
-## Only on the local machine
-```bash
-docker build -t promptfoo-tex .
-```
-
-```bash
-docker run --rm -it \
-  --add-host=host.docker.internal:host-gateway \
-  --env-file .env \
-  -v "$PWD:/app" \
-  -v "$PWD/result/promptfoo-db:/root/.promptfoo" \
-  -v "$PWD/result/generated_images:/generated_images" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/image_manifest.csv:/image_manifest.csv" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/benchmark_corpus:/crystalbleu_corpus" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/images:/images" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/references:/references" \
-  -v "/home/jonas/models:/models" \
-  -p 15500:15500 \
-  promptfoo-tex \
-  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_geotikzbridge-8b.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"
-  ```
-
-
-tmux new -s promptfoo_splits
-Ctrl-b, then d
-tmux attach -t promptfoo_splits
-tmux ls
-exit
-tmux kill-session -t promptfoo_splits
-
-
-
-```bash
-docker run --rm -it \
-  --add-host=host.docker.internal:host-gateway \
-  --env-file .env \
-  -v "$PWD:/app" \
-  -v "$PWD/result/promptfoo-db:/root/.promptfoo" \
-  -v "$PWD/result/generated_images:/generated_images" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/image_manifest.csv:/image_manifest.csv" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/benchmark_corpus:/crystalbleu_corpus" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/images:/images" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/references:/references" \
-  -v "/home/jonas/Datasets/TikZ/benchmark_data/vlm_descriptions:/vlm_descriptions" \
-  -v "/home/jonas/models:/models" \
-  -p 15500:15500 \
-  promptfoo-tex \
-  sh -c "promptfoo eval -c configs/image_to_tikz_promptfooconfig_gemma_finetuned.yaml -j 1 --watch & sleep 5 && promptfoo view --port 15500 --no"
-  ```
+Code metrics use the modified TeX strings. Image metrics re-render both the modified reference code and the modified model output before calculating the score.

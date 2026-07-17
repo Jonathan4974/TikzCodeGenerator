@@ -1,5 +1,6 @@
 import glob
 import hashlib
+import shutil
 from io import BytesIO
 from pathlib import Path
 
@@ -8,8 +9,14 @@ from PIL import Image
 from tqdm.auto import tqdm
 
 
-INPUT_DIR = Path("./data/clean_parquets/our_dataset_benchmark")
-OUTPUT_DIR = Path("./data/exported_dataset/our_dataset_benchmark_merged")
+INPUT_DIR = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark")
+OUTPUT_DIR = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark_merged")
+
+NUM_SAMPLES = 500
+
+IMAGE_COL_MANIFEST = "reference_image"
+CODE_COL_MANIFEST = "reference_code"
+LLM_DESCRIPTION_COL_MANIFEST = "llm_description"
 
 MODES = {
     "simple_vlm_description": (
@@ -50,6 +57,7 @@ def load_mode(mode, cols):
     files = sorted(
         glob.glob(str(INPUT_DIR / f"*-{mode}_part-*.parquet"))
     )
+
     if not files:
         raise FileNotFoundError(f"Keine Dateien für {mode}")
 
@@ -65,7 +73,6 @@ def load_mode(mode, cols):
         ignore_index=True,
     )
 
-    # Gemeinsamer CrystalBLEU-Korpus
     corpus_dir = OUTPUT_DIR / "crystalbleu_corpus"
     corpus_dir.mkdir(parents=True, exist_ok=True)
 
@@ -81,7 +88,6 @@ def load_mode(mode, cols):
                 encoding="utf-8",
             )
 
-    # Nur vollständige Samples
     complete = (
         df[image_col].notna()
         & df[code_col].notna()
@@ -95,41 +101,67 @@ def load_mode(mode, cols):
     return df.drop_duplicates("sample_key").set_index("sample_key")
 
 
+# Alte Exporte entfernen
+if OUTPUT_DIR.exists():
+    shutil.rmtree(OUTPUT_DIR)
+
 data = {
     mode: load_mode(mode, cols)
     for mode, cols in MODES.items()
 }
 
-# Schnittmenge aller Modi
-common = set.intersection(*(set(df.index) for df in data.values()))
+# Nur Samples behalten, die in allen Modi vorhanden sind
+common_set = set.intersection(
+    *(set(df.index) for df in data.values())
+)
+
 first_mode = next(iter(MODES))
-common = [key for key in data[first_mode].index if key in common]
+
+common = [
+    sample_key
+    for sample_key in data[first_mode].index
+    if sample_key in common_set
+]
+
+available = len(common)
+
+# Maximal NUM_SAMPLES exportieren
+common = common[:NUM_SAMPLES]
 
 manifests = {mode: [] for mode in MODES}
 
 for mode in MODES:
     for folder in ("images", "references", "descriptions"):
-        (OUTPUT_DIR / mode / folder).mkdir(parents=True, exist_ok=True)
+        (OUTPUT_DIR / mode / folder).mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
 for number, sample_key in enumerate(tqdm(common)):
     sample_id = f"{number:08d}"
 
-    for mode, (image_col, code_col, description_col) in MODES.items():
+    for mode, (
+        image_col,
+        code_col,
+        description_col,
+    ) in MODES.items():
         row = data[mode].loc[sample_key]
         mode_dir = OUTPUT_DIR / mode
 
-        image_path = Path("images") / f"{sample_id}.png"
-        code_path = Path("references") / f"{sample_id}.tex"
-        description_path = Path("descriptions") / f"{sample_id}.txt"
+        image_path = mode_dir / "images" / f"{sample_id}.png"
+        code_path = mode_dir / "references" / f"{sample_id}.tex"
+        description_path = (
+            mode_dir / "descriptions" / f"{sample_id}.txt"
+        )
 
-        load_image(row[image_col]).save(mode_dir / image_path)
+        load_image(row[image_col]).save(image_path)
 
-        (mode_dir / code_path).write_text(
+        code_path.write_text(
             str(row[code_col]),
             encoding="utf-8",
         )
 
-        (mode_dir / description_path).write_text(
+        description_path.write_text(
             str(row[description_col]).strip(),
             encoding="utf-8",
         )
@@ -137,11 +169,11 @@ for number, sample_key in enumerate(tqdm(common)):
         manifests[mode].append({
             "id": sample_id,
             "sample_key": sample_key,
-            "image_path": (mode_dir / image_path).resolve().as_posix(),
-            "code_path": (mode_dir / code_path).resolve().as_posix(),
-            "description_path": (
-                mode_dir / description_path
-            ).resolve().as_posix(),
+            IMAGE_COL_MANIFEST: image_path.resolve().as_posix(),
+            CODE_COL_MANIFEST: code_path.resolve().as_posix(),
+            LLM_DESCRIPTION_COL_MANIFEST: (
+                description_path.resolve().as_posix()
+            ),
         })
 
 for mode, manifest in manifests.items():
@@ -150,5 +182,6 @@ for mode, manifest in manifests.items():
         index=False,
     )
 
-print(f"Exportiert: {len(common):,} gemeinsame Samples")
+print(f"Gemeinsame Samples verfügbar: {available:,}")
+print(f"Exportiert: {len(common):,}")
 print(f"Ausgabe: {OUTPUT_DIR}")

@@ -1,67 +1,65 @@
-import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
 
 from PIL import Image, ImageChops
 
+from config import RENDER
+
+
+FENCED_TEX_PATTERN = re.compile(
+    r"```(?:latex|tex)?[ \t]*\r?\n?(.*?)```",
+    flags=re.IGNORECASE | re.DOTALL,
+)
 
 class TikzRenderError(RuntimeError):
-    def __init__(self, message, metrics=None):
+    def __init__(self, message: str, metrics: dict | None = None):
         super().__init__(message)
         self.metrics = metrics or {}
 
 
-def env_bool(name, default):
-    value = os.getenv(name)
-    return default if value is None else value.lower() in {"1", "true", "yes", "on"}
+def executable(name: str, texlive: bool = False) -> str | None:
+    if texlive:
+        candidate = RENDER.texlive_bin / name
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which(name)
 
 
-def run(cmd, cwd):
-    timeout = int(os.getenv("LATEX_TIMEOUT", "60"))
-
+def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(
-            cmd,
+            command,
             cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=timeout,
+            timeout=RENDER.timeout_seconds,
         )
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired as error:
+        stdout = error.stdout if isinstance(error.stdout, str) else ""
         return subprocess.CompletedProcess(
-            cmd,
-            returncode=124,
-            stdout=(e.stdout or "") if isinstance(e.stdout, str) else "",
-            stderr=f"TIMEOUT after {timeout}s",
+            command,
+            124,
+            stdout,
+            f"TIMEOUT after {RENDER.timeout_seconds}s",
         )
 
 
-def count_latex_issues(log_text):
-    errors = 0
-    warnings = 0
-    badboxes = 0
-
+def latex_issues(log_text: str) -> dict[str, int]:
+    errors = warnings = badboxes = 0
     for line in log_text.splitlines():
-        s = line.strip()
-
-        if s.startswith("!"):
+        text = line.strip()
+        if text.startswith("!") or re.match(r"^\.?/?.*\.tex:\d+:", text):
             errors += 1
-
-        elif re.match(r"^\.?/?.*\.tex:\d+:", s):
-            errors += 1
-
-        if "Warning:" in s and not s.startswith("Package rerunfilecheck Warning:"):
+        if "Warning:" in text and not text.startswith("Package rerunfilecheck Warning:"):
             warnings += 1
-
-        if s.startswith("Overfull \\") or s.startswith("Underfull \\"):
+        if text.startswith(("Overfull \\", "Underfull \\")):
             badboxes += 1
-
     return {
         "latex_errors": errors,
         "latex_warnings": warnings,
@@ -69,245 +67,202 @@ def count_latex_issues(log_text):
     }
 
 
-def get_pdf_page_count(pdf_path: Path, cwd: Path) -> int | None:
-    """
-    Gibt die Seitenzahl eines PDFs zurück.
-    Nutzt bevorzugt pdfinfo. Falls nicht vorhanden oder fehlerhaft: None.
-    """
-    if not shutil.which("pdfinfo"):
+
+def clean_tex(code: str) -> str:
+    if not code:
+        return ""
+
+    code = code.strip().lstrip("\ufeff")
+
+    match = FENCED_TEX_PATTERN.search(code)
+    if match:
+        return match.group(1).strip()
+
+    return code
+
+
+def disable_page_numbers(code: str) -> str:
+    marker = r"\begin{document}"
+    if marker not in code:
+        return code
+    code = code.replace(marker, r"\pagestyle{empty}" + "\n" + marker, 1)
+    return code.replace(marker, marker + "\n" + r"\thispagestyle{empty}", 1)
+
+
+def crop_png(path: Path, padding: int = 4, tolerance: int = 10) -> None:
+    image = Image.open(path).convert("RGB")
+    difference = ImageChops.difference(image, Image.new("RGB", image.size, "white"))
+    difference = difference.point(lambda value: 255 if value > tolerance else 0)
+    box = difference.getbbox()
+    if not box:
+        return
+    left, top, right, bottom = box
+    image.crop(
+        (
+            max(0, left - padding),
+            max(0, top - padding),
+            min(image.width, right + padding),
+            min(image.height, bottom + padding),
+        )
+    ).save(path)
+
+
+def normalize_canvas(path: Path) -> None:
+    image = Image.open(path).convert("RGBA")
+    scale = min(RENDER.image_size / image.width, RENDER.image_size / image.height)
+    if not RENDER.upscale_canvas:
+        scale = min(scale, 1.0)
+    width = max(1, round(image.width * scale))
+    height = max(1, round(image.height * scale))
+    image = image.resize((width, height), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (RENDER.image_size, RENDER.image_size), "white")
+    canvas.alpha_composite(image, ((RENDER.image_size - width) // 2, (RENDER.image_size - height) // 2))
+    canvas.convert("RGB").save(path)
+
+
+def pdf_page_count(pdf: Path, cwd: Path) -> int | None:
+    pdfinfo = executable("pdfinfo")
+    if not pdfinfo:
         return None
-
-    result = run(["pdfinfo", str(pdf_path)], cwd)
-
+    result = run([pdfinfo, str(pdf)], cwd)
     if result.returncode != 0:
         return None
-
     for line in result.stdout.splitlines():
         if line.startswith("Pages:"):
             try:
                 return int(line.split(":", 1)[1].strip())
             except ValueError:
                 return None
-
     return None
 
 
-def disable_page_numbers(tex):
-    if r"\begin{document}" not in tex:
-        return tex
+def render_tex_to_png(
+    tex_code: str,
+    output_path: str | Path,
+    metrics: dict | None = None,
+    create_ds: bool = False,
+) -> Path:
+    metrics = metrics if metrics is not None else {}
+    code = clean_tex(tex_code)
+    if RENDER.disable_page_numbers:
+        code = disable_page_numbers(code)
 
-    tex = tex.replace(
-        r"\begin{document}",
-        r"\pagestyle{empty}" + "\n" + r"\begin{document}",
-        1,
-    )
-
-    tex = tex.replace(
-        r"\begin{document}",
-        r"\begin{document}" + "\n" + r"\thispagestyle{empty}",
-        1,
-    )
-
-    return tex
-
-
-def crop_png(path, padding=4, tolerance=10):
-    path = Path(path)
-
-    img = Image.open(path).convert("RGB")
-    bg = Image.new("RGB", img.size, "white")
-
-    diff = ImageChops.difference(img, bg)
-    diff = diff.point(lambda p: 255 if p > tolerance else 0)
-
-    bbox = diff.getbbox()
-    if bbox is None:
-        return
-
-    l, t, r, b = bbox
-    l = max(l - padding, 0)
-    t = max(t - padding, 0)
-    r = min(r + padding, img.width)
-    b = min(b + padding, img.height)
-
-    img.crop((l, t, r, b)).save(path)
-
-
-def normalize_canvas(path, size=384, upscale=True):
-    path = Path(path)
-
-    img = Image.open(path).convert("RGBA")
-    w, h = img.size
-
-    scale = min(size / w, size / h)
-    if not upscale:
-        scale = min(scale, 1.0)
-
-    nw = max(1, round(w * scale))
-    nh = max(1, round(h * scale))
-
-    img = img.resize((nw, nh), Image.Resampling.LANCZOS)
-
-    canvas = Image.new("RGBA", (size, size), "white")
-    canvas.alpha_composite(img, ((size - nw) // 2, (size - nh) // 2))
-    canvas.convert("RGB").save(path)
-
-
-def clean_markdown_tex(tex_code: str) -> str:
-    if not tex_code:
-        return ""
-
-    tex_code = re.sub(
-        r"^\s*```[a-zA-Z]*\s*\n?",
-        "",
-        tex_code,
-        flags=re.IGNORECASE,
-    )
-    tex_code = re.sub(r"\n?\s*```\s*$", "", tex_code)
-
-    return tex_code.strip()
-
-
-def render_tex_to_png(tex_code, output_path, metrics=None, create_ds=False):
-    tex_code = clean_markdown_tex(tex_code)
-
-    if metrics is None:
-        metrics = {}
-
-    engines = [
-        e.strip()
-        for e in os.getenv("LATEX_ENGINES", "pdflatex,lualatex,xelatex").split(",")
-        if e.strip()
-    ]
-
-    dpi = int(os.getenv("LATEX_DPI", "600"))
-    size = int(os.getenv("REF_IMAGE_SIZE", "512"))
-
-    crop_pdf = env_bool("LATEX_CROP_PDF", True)
-    crop_png_enabled = env_bool("LATEX_CROP_PNG", True)
-    normalize = env_bool("LATEX_NORMALIZE_CANVAS", True)
-    upscale = env_bool("LATEX_UPSCALE_CANVAS", True)
-
-    halt_on_error = env_bool("LATEX_HALT_ON_ERROR", True)
-    tolerant_fallback = env_bool("LATEX_TOLERANT_FALLBACK", True)
-    disable_pages = env_bool("LATEX_DISABLE_PAGE_NUMBERS", True)
-
-    if disable_pages:
-        tex_code = disable_page_numbers(tex_code)
-
-    halt_modes = [halt_on_error]
-    if halt_on_error and tolerant_fallback:
+    halt_modes = [RENDER.halt_on_error]
+    if RENDER.halt_on_error and RENDER.tolerant_fallback:
         halt_modes.append(False)
 
-    errors = []
-    last_metrics = {}
+    errors: list[str] = []
+    last_metrics: dict = {}
 
-    for engine in engines:
-        if not shutil.which(engine):
+    for engine in RENDER.engines:
+        engine_path = executable(engine, texlive=True)
+        if not engine_path:
             continue
 
         for halt in halt_modes:
-            with tempfile.TemporaryDirectory() as tmp:
-                tmp = Path(tmp)
+            with tempfile.TemporaryDirectory() as temp:
+                directory = Path(temp)
+                tex = directory / "figure.tex"
+                pdf = directory / "figure.pdf"
+                cropped_pdf = directory / "figure-crop.pdf"
+                png = directory / "figure.png"
+                log = directory / "figure.log"
+                tex.write_text(code, encoding="utf-8")
 
-                tex = tmp / "figure.tex"
-                pdf = tmp / "figure.pdf"
-                pdf_crop = tmp / "figure-crop.pdf"
-                png = tmp / "figure.png"
-                log = tmp / "figure.log"
-
-                tex.write_text(tex_code, encoding="utf-8")
-
-                cmd = [engine, "-interaction=nonstopmode", "-file-line-error"]
+                command = [engine_path, "-interaction=nonstopmode", "-file-line-error"]
                 if halt:
-                    cmd.append("-halt-on-error")
-                cmd.append(tex.name)
+                    command.append("-halt-on-error")
+                command.append(tex.name)
+                completed = None
+                run_outputs: list[str] = []
 
-                result = run(cmd, tmp)
+                for _ in range(max(1, RENDER.latex_runs)):
+                    completed = run(command, directory)
 
-                log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+                    run_outputs.append(
+                        completed.stdout + "\n" + completed.stderr
+                    )
 
-                issues = count_latex_issues(log_text)
+                    if completed.returncode != 0 and not pdf.exists():
+                        break
 
-                attempt_metrics = {
-                    **issues,
-                    "latex_returncode": result.returncode,
+                assert completed is not None
+
+                log_text = (
+                    log.read_text(
+                        encoding="utf-8",
+                        errors="replace",
+                    )
+                    if log.exists()
+                    else ""
+                )
+
+                attempt = {
+                    **latex_issues(log_text),
+                    "latex_returncode": completed.returncode,
                     "pdf_created": pdf.exists(),
                     "engine": engine,
                     "halt_on_error": halt,
                     "pdf_pages": None,
                     "multipage_rejected": False,
                 }
+                last_metrics = attempt
+                metrics.update(attempt)
 
-                last_metrics = attempt_metrics
-                metrics.update(attempt_metrics)
-
-                if result.returncode != 0 and not pdf.exists():
-                    errors.append(result.stdout[-3000:] + result.stderr[-3000:])
+                if completed.returncode != 0 and not pdf.exists():
+                    errors.append("\n".join(run_outputs)[-6000:])
                     continue
-
                 if not pdf.exists():
                     errors.append("No PDF created.")
                     continue
 
-                # ====================================================
-                # DATASET MODE: reject multi-page PDFs
-                # ====================================================
                 if create_ds:
-                    page_count = get_pdf_page_count(pdf, tmp)
-                    attempt_metrics["pdf_pages"] = page_count
-                    metrics["pdf_pages"] = page_count
-
-                    if page_count is not None and page_count != 1:
-                        attempt_metrics["multipage_rejected"] = True
+                    pages = pdf_page_count(pdf, directory)
+                    metrics["pdf_pages"] = pages
+                    if pages is not None and pages != 1:
                         metrics["multipage_rejected"] = True
-                        errors.append(f"Rejected multi-page PDF: pages={page_count}")
+                        errors.append(f"Rejected multi-page PDF: pages={pages}")
                         continue
 
                 pdf_to_render = pdf
+                pdfcrop = executable("pdfcrop", texlive=True)
+                if RENDER.crop_pdf and pdfcrop:
+                    crop = run([pdfcrop, "--margins", "0", str(pdf), str(cropped_pdf)], directory)
+                    if crop.returncode == 0 and cropped_pdf.exists():
+                        pdf_to_render = cropped_pdf
 
-                if crop_pdf and shutil.which("pdfcrop"):
-                    result = run(
-                        ["pdfcrop", "--margins", "0", str(pdf), str(pdf_crop)],
-                        tmp,
-                    )
-                    if result.returncode == 0 and pdf_crop.exists():
-                        pdf_to_render = pdf_crop
+                pdftoppm = executable("pdftoppm")
+                if not pdftoppm:
+                    errors.append("pdftoppm not found.")
+                    continue
 
-                result = run(
+                converted = run(
                     [
-                        "pdftoppm",
+                        pdftoppm,
                         "-png",
                         "-singlefile",
                         "-r",
-                        str(dpi),
+                        str(RENDER.dpi),
                         str(pdf_to_render),
-                        str(tmp / "figure"),
+                        str(directory / "figure"),
                     ],
-                    tmp,
+                    directory,
                 )
-
-                if result.returncode != 0 or not png.exists():
-                    errors.append("pdftoppm failed:\n" + result.stderr[-3000:])
+                if converted.returncode != 0 or not png.exists():
+                    errors.append("pdftoppm failed:\n" + converted.stderr[-3000:])
                     continue
 
-                if crop_png_enabled:
+                if RENDER.crop_png:
                     crop_png(png)
+                if RENDER.normalize_canvas:
+                    normalize_canvas(png)
 
-                if normalize:
-                    normalize_canvas(png, size=size, upscale=upscale)
-
-                output_path = Path(output_path)
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_bytes(png.read_bytes())
-
+                output = Path(output_path)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(png.read_bytes())
                 metrics["render_success"] = True
-                return output_path
+                return output
 
     metrics.update(last_metrics)
     metrics["render_success"] = False
-
-    raise TikzRenderError(
-        "Render failed:\n" + "\n\n".join(errors[-3:]),
-        metrics=metrics,
-    )
+    raise TikzRenderError("Render failed:\n" + "\n\n".join(errors[-3:]), metrics)

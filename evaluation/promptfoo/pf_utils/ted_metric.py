@@ -1,88 +1,36 @@
 from pygments.lexers.markup import TexLexer
-from pygments.token import Comment, Text
-from torchmetrics.text import ExtendedEditDistance
-from torchmetrics.functional.text.eed import (
-    _compute_sentence_statistics,
-    _preprocess_en,
-    _preprocess_ja,
-)
-from torchmetrics.functional.text.helper import _validate_inputs
-
-class TexEditDistance(ExtendedEditDistance):
-    """Adapt torchmetrics ExtendedEditDistance for TeX"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.lexer = TexLexer()
-
-    def __str__(self):
-        return self.__class__.__name__
-
-    def _preprocess_sentences(self, preds, target, language):
-        target, preds = _validate_inputs(hypothesis_corpus=preds, ref_corpus=target)
-
-        def tokenize(text):
-            tokens = list()
-            for tokentype, value in self.lexer.get_tokens(text):
-                if value.strip():
-                    if tokentype is Text:
-                        if language == "en":
-                            preprocess_function = _preprocess_en
-                        elif language == "ja":
-                            preprocess_function = _preprocess_ja
-                        else:
-                            raise ValueError(f"Expected argument `language` to either be `en` or `ja` but got {language}")
-                        tokens.extend(preprocess_function(value).split())
-                    elif not tokentype is Comment:
-                        tokens.extend(value.split())
-
-            return " " + " ".join(tokens) + " "
-
-        preds = [tokenize(pred) for pred in preds]
-        target = [[tokenize(ref) for ref in reference] for reference in target]
-
-        return preds, target
-
-    def update(self, preds, target):
-        """Update state with predictions and targets."""
-        preds, target = self._preprocess_sentences(preds, target, self.language)
-
-        if self.sentence_eed is None:
-            self.sentence_eed = []
-
-        if 0 in (len(preds), len(target[0])):
-            return self.sentence_eed
-
-        for (hypothesis, target_words) in zip(preds, target):
-            score = _compute_sentence_statistics(
-                hypothesis,
-                target_words,
-                self.alpha,
-                self.rho,
-                self.deletion,
-                self.insertion
-            )
-            self.sentence_eed.append(score)
-
-        return self.sentence_eed
-
-    def compute(self, *args, **kwargs):
-        return super().compute(*args, **kwargs).item() # type: ignore
+from pygments.token import Comment
 
 
-def compute_ted(
-    generated_code: str,
-    reference_code: str,
-    language: str = "en",
-):
-    metric = TexEditDistance(language=language)
-
-    metric.update(
-        preds=[generated_code],
-        target=[[reference_code]],
-    )
-
-    return float(metric.compute())
+def tokenize(text: str) -> list[str]:
+    lexer = TexLexer()
+    return [value.strip() for token_type, value in lexer.get_tokens(text) if value.strip() and token_type not in Comment]
 
 
-def ted_to_similarity(ted: float):
-    return 1.0 / (1.0 + ted)
+def levenshtein(left: list[str], right: list[str]) -> int:
+    if len(left) < len(right):
+        left, right = right, left
+
+    previous = list(range(len(right) + 1))
+    for i, left_token in enumerate(left, 1):
+        current = [i]
+        for j, right_token in enumerate(right, 1):
+            current.append(min(
+                current[-1] + 1,
+                previous[j] + 1,
+                previous[j - 1] + (left_token != right_token),
+            ))
+        previous = current
+    return previous[-1]
+
+
+def compute_ted(generated_code: str, reference_code: str) -> float:
+    generated = tokenize(generated_code)
+    reference = tokenize(reference_code)
+    if not reference:
+        raise ValueError("Reference code is empty")
+    return levenshtein(generated, reference) / len(reference)
+
+
+def distance_to_similarity(distance: float) -> float:
+    return 1.0 / (1.0 + distance)

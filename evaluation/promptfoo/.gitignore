@@ -1,9 +1,8 @@
-promptfoo-db
-result
-.cache
+__pycache__/
+*.py[cod]
 .env
-cache
-generated_configs
-promptfoo.tar
-promptfoo-tex.sqsh
-promptfoo.sif
+.cache/
+node_modules/
+result/
+.DS_Store
+package-lock.json

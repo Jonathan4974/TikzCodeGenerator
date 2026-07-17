@@ -1,58 +1,15 @@
-from pathlib import Path
-import tempfile
-import traceback
-
-from pf_utils.tikz_rendering import render_tex_to_png
+from assertions.common import image_assertion
 from pf_utils.clip_siglip_metric import image_cosine_similarity
 
 
-def get_assert(output: str, context):
-    vars_ = context.get("vars", {})
-
-    reference_image = vars_.get("reference_image")
-    config = context.get("config")
-    threshold = float(config.get("threshold", 0.75))
-
-    if not reference_image:
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": f"Missing vars.reference_image. Available vars: {list(vars_.keys())}",
-        }
-
-    reference_image = Path(reference_image)
-
-    if not reference_image.exists():
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": f"Input image does not exist: {reference_image}",
-        }
-
-    try:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            generated_image = Path(tmp_dir) / "generated.png"
-
-            render_tex_to_png(
-                tex_code=output,
-                output_path=generated_image,
-            )
-
-            score = image_cosine_similarity(
-                image_a=reference_image,
-                image_b=generated_image,
-                model_key="clip",
-            )
-
-        return {
-            "pass": score >= threshold,
-            "score": score,
-            "reason": f"CLIP similarity={score:.4f}"
-        }
-
-    except Exception as e:
-        return {
-            "pass": False,
-            "score": 0.0,
-            "reason": f"CLIP similarity failed: {e}\n{traceback.format_exc()}",
-        }
+def get_assert(output: str, context: dict):
+    return image_assertion(
+        output,
+        context,
+        "clip",
+        lambda reference, generated, config: (
+            image_cosine_similarity(reference, generated, "clip"),
+            {},
+            "",
+        ),
+    )
