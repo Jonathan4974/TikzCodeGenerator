@@ -19,7 +19,7 @@ CODE_COL_MANIFEST = "reference_code"
 LLM_DESCRIPTION_COL_MANIFEST = "llm_description"
 
 MODES = {
-    "simple_vlm_description": (
+    "simple_llm_description": (
         "image_with_text",
         "code_with_text",
         "llm_description_with_text",

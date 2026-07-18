@@ -1,4 +1,4 @@
 ollama-data/
 ollama+ollama+latest.sqsh
 ollama_client/__pycache__
-ollama_client/ollama-client.sqsh
+ollama-tikz-api.sqsh

@@ -2,7 +2,7 @@ You receive complete LaTeX, TikZ, or PGFPlots source code.
 
 Write one concise English paragraph describing the rendered image, including its layout, shapes, colors, lines, axes, plots, and visible labels or numbers.
 
-Then provide 3 to 5 short, human-written LaTeX/TikZ examples that demonstrate the most important techniques used in this specific image. 
+Then provide 1 to 2 short, human-written LaTeX/TikZ examples that demonstrate the most important techniques used in this specific image. 
 
 Simplify the original code into clear, reusable examples rather than copying long excerpts. Think of it like latex modules that can be reused to create this specific code.
 

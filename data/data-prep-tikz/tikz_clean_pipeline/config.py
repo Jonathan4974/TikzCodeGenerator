@@ -8,28 +8,46 @@ import os
 # Every mode is an independent run and writes its own Parquet shards.
 # For the same split and RANDOM_SEED, all modes use the same sample order.
 #
-# num          = samples that receive the selected mode processing.
-# absolute_num = total selected samples written for this mode.
-# Remaining rows contain only the original LaTeX code; mode outputs are None.
+# num          = successfully saved samples receiving active mode processing.
+# absolute_num = final number of rows written for this mode.
+# train=False  = benchmark behavior from the previous pipeline version.
+# train=True   = remaining rows are re-rendered from their original code for
+#                validation and the rendered PNG is stored in image_with_text.
+#                Invalid rows are replaced until absolute_num rows are saved.
 SPLITS: dict[str, list[dict]] = {
     "our_dataset_benchmark": [
         {
-            "type": "full_cleaning",
-            "num": 550,
-            "absolute_num": 30_000,
+            "type": "simple_llm_description",
+            "num": 700,
+            "absolute_num": 50_000,
+            "train": False,
         },
         {
-            "type": "simple_vlm_description",
-            "num": 550,
-            "absolute_num": 30_000,
+            "type": "full_cleaning",
+            "num": 700,
+            "absolute_num": 50_000,
+            "train": False,
         },
         {
             "type": "deterministic_cleaning",
-            "num": 550,
-            "absolute_num": 30_000,
+            "num": 700,
+            "absolute_num": 50_000,
+            "train": False,
         },
     ],
 }
+
+
+"""SPLITS: dict[str, list[dict]] = {
+    "our_dataset_benchmark": [
+        {
+            "type": "simple_llm_description",
+            "num": 10,
+            "absolute_num": 300,
+            "train": True,
+        }
+    ],
+}"""
 
 HF_REPO_ID = "loss-boss/tikz-dataset"
 HF_CACHE_DIR = Path("../hf_cache")
@@ -81,6 +99,13 @@ LATEX_DPI = 400
 REFERENCE_IMAGE_SIZE = 512
 WHITE_PIXEL_THRESHOLD = 250
 MIN_INK_FRACTION = 0.002
+
+# Parallel rendering and validation of the train base rows. The expensive work is performed
+# by independent LaTeX/pdftoppm subprocesses, so a thread pool can run several
+# render jobs concurrently without involving Ollama. Limit the default to avoid
+# exhausting RAM while still using multiple CPU cores.
+TRAIN_RENDER_WORKERS = max(1, min(8, os.cpu_count() or 1))
+TRAIN_RENDER_MAX_IN_FLIGHT = TRAIN_RENDER_WORKERS * 2
 
 
 def apply_environment() -> None:

@@ -35,6 +35,18 @@ class ValidatedRenderer:
                 create_ds=True,
             )
 
+            latex_errors = int(metrics.get("latex_errors") or 0)
+            latex_warnings = int(metrics.get("latex_warnings") or 0)
+            latex_badboxes = int(metrics.get("latex_badboxes") or 0)
+
+            if latex_errors:
+                raise RenderRejected(
+                    "LaTeX issues detected: "
+                    f"errors={latex_errors}, "
+                    f"warnings={latex_warnings}, "
+                    f"badboxes={latex_badboxes}."
+                )
+
             if metrics.get("pdf_pages") != 1:
                 raise RenderRejected(
                     f"Expected exactly one PDF page, got {metrics.get('pdf_pages')}."

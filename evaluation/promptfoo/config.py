@@ -47,6 +47,7 @@ class Render:
 @dataclass(frozen=True)
 class ProviderRun:
     label: str
+    result_name: str
     ollama_model: str | None = None
 
 
@@ -60,7 +61,11 @@ class Promptfoo:
     unload_ollama: bool = True
     ollama_url: str = "http://127.0.0.1:11434"
     provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b"),
+        ProviderRun(
+            label="qwen3-vl:8b-instruct-bf16",
+            result_name="result-qwen3-vl-8b-instruct-bf16",
+            ollama_model="qwen3-vl:8b-instruct-bf16",
+        ),
     )
     
     #provider_order: tuple[ProviderRun, ...] = (
@@ -140,6 +145,7 @@ def apply_runtime_environment() -> dict[str, str]:
         "PROMPTFOO_PYTHON": sys.executable,
         "PROMPTFOO_DISABLE_TELEMETRY": "1",
         "PROMPTFOO_DISABLE_UPDATE": "1",
+        "PROMPTFOO_FAILED_TEST_EXIT_CODE": "0",
         "PROMPTFOO_CONFIG_DIR": str(PATHS.promptfoo_db),
         "PROMPTFOO_ASSERTIONS_MAX_CONCURRENCY": str(
             PROMPTFOO.assertions_max_concurrency

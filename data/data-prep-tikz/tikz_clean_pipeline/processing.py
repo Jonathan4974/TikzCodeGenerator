@@ -6,11 +6,10 @@ import config
 from cleaning import DeterministicCleaner
 from ollama_client import OllamaClient
 from rendering import ValidatedRenderer
-from storage import image_to_hf_struct
 
 
 class ProcessingMode(str, Enum):
-    SIMPLE_VLM_DESCRIPTION = "simple_vlm_description"
+    SIMPLE_LLM_DESCRIPTION = "simple_llm_description"
     DETERMINISTIC_CLEANING = "deterministic_cleaning"
     FULL_CLEANING = "full_cleaning"
 
@@ -41,18 +40,51 @@ class SampleProcessor:
 
         return self._base_row(output_mode, original_code)
 
+    def validated_base_only(
+        self,
+        output_mode: ProcessingMode,
+        original_code: str,
+    ) -> dict:
+        """Render, validate, and store the original image for a train base row."""
+
+        try:
+            rendered = self.renderer.render(original_code)
+        except Exception as error:
+            raise SampleProcessingError(
+                "render_train_base",
+                original_code,
+                error,
+            ) from error
+
+        row = self._base_row(output_mode, original_code)
+        row[config.IMAGE_WITH_TEXT_COL] = {
+            "bytes": rendered,
+            "path": None,
+        }
+        return row
+
     def process(
         self,
         mode: ProcessingMode,
-        sample: dict,
         original_code: str,
     ) -> dict:
         row = self._base_row(mode, original_code)
 
-        if mode is ProcessingMode.SIMPLE_VLM_DESCRIPTION:
-            row[config.IMAGE_WITH_TEXT_COL] = image_to_hf_struct(
-                sample.get(config.IMAGE_WITH_TEXT_COL)
-            )
+        if mode is ProcessingMode.SIMPLE_LLM_DESCRIPTION:
+            try:
+                rendered = self.renderer.render(original_code)
+            except Exception as error:
+                raise SampleProcessingError(
+                    "render_original",
+                    original_code,
+                    error,
+                ) from error
+
+            row[config.IMAGE_WITH_TEXT_COL] = {
+                "bytes": rendered,
+                "path": None,
+            }
+
             try:
                 row[config.DESCRIPTION_WITH_TEXT_COL] = self.ollama.describe_latex(
                     original_code
@@ -153,7 +185,7 @@ class SampleProcessor:
     def _base_row(mode: ProcessingMode, original_code: str) -> dict:
         row = {config.CODE_WITH_TEXT_COL: original_code}
 
-        if mode is ProcessingMode.SIMPLE_VLM_DESCRIPTION:
+        if mode is ProcessingMode.SIMPLE_LLM_DESCRIPTION:
             row.update(
                 {
                     config.IMAGE_WITH_TEXT_COL: None,

@@ -8,8 +8,33 @@ import sys
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from config import PATHS, PROMPTFOO, ROOT, ProviderRun, apply_runtime_environment
+from config import PATHS, PROMPTFOO, ROOT, ProviderRun, apply_runtime_environment, ensure_directories
 
+def rename_result_directory(provider: ProviderRun) -> None:
+    source = PATHS.results
+    target = source.parent / provider.result_name
+
+    if not source.exists():
+        print(
+            f"Warning: result directory does not exist: {source}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return
+
+    if target.exists():
+        raise SystemExit(
+            f"Result directory already exists: {target}"
+        )
+
+    source.rename(target)
+
+    print(
+        f"Result directory renamed:\n"
+        f"  {source}\n"
+        f"  -> {target}",
+        flush=True,
+    )
 
 def promptfoo_command() -> list[str]:
     name = "promptfoo.cmd" if sys.platform == "win32" else "promptfoo"
@@ -105,7 +130,12 @@ def run_eval(promptfoo: list[str], extra: list[str]) -> int:
         ).returncode
 
     for provider in PROMPTFOO.provider_order:
-        print(f"\n===== Provider: {provider.label} =====\n", flush=True)
+        ensure_directories()
+
+        print(
+            f"\n===== Provider: {provider.label} =====\n",
+            flush=True,
+        )
 
         try:
             result = subprocess.run(
@@ -123,6 +153,8 @@ def run_eval(promptfoo: list[str], extra: list[str]) -> int:
             )
         finally:
             unload_ollama(provider)
+
+        rename_result_directory(provider)
 
         if result.returncode != 0:
             return result.returncode
