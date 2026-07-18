@@ -14,6 +14,10 @@ import os
 # train=True   = remaining rows are re-rendered from their original code for
 #                validation and the rendered PNG is stored in image_with_text.
 #                Invalid rows are replaced until absolute_num rows are saved.
+#                At the moment this mode only makes sense for the simple_llm_description
+#                because the text is not removed for the remaining rows. Removing the text
+#                is a augmentation technique. Therefore you can also use train=False and set
+#                num=absolute_num.
 SPLITS: dict[str, list[dict]] = {
     "our_dataset_benchmark": [
         {

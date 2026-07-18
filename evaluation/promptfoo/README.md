@@ -27,6 +27,20 @@ data/benchmark_corpus/*.txt
 
 The CSV file must contain at least the columns `reference_image` and `reference_code`. Absolute paths are kept unchanged. Relative paths are resolved relative to the manifest file. Legacy container paths under `/images` and `/references` are automatically mapped to the central data directories.
 
+
+
+## Setup docker
+docker build -t promptfoo-tikz:latest .
+
+docker run --rm -it \
+  --gpus all \
+  --network host \
+  -v /home/jonas/Datasets:/home/jonas/Datasets:ro \
+  promptfoo-tikz:latest \
+  python run.py eval
+
+enroot import -o promptfoo-tikz.sqsh dockerd://promptfoo-tikz:latest
+
 ## Running the Benchmark
 
 The model server must be running at the URL configured in `config.py`.

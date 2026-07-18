@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 @dataclass(frozen=True)
 class Paths:
-    data: Path = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark_merged/simple_vlm_description")
+    data: Path = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark_merged/simple_llm_description")
     manifest: Path = data / "manifest.csv"
     images: Path = data / "images"
     references: Path = data / "references"
@@ -62,18 +62,75 @@ class Promptfoo:
     ollama_url: str = "http://127.0.0.1:11434"
     provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
-            label="qwen3-vl:8b-instruct-bf16",
-            result_name="result-qwen3-vl-8b-instruct-bf16",
-            ollama_model="qwen3-vl:8b-instruct-bf16",
+            label="qwen3-vl:8b-thinking-bf16",
+            result_name="qwen3-vl-8b-thinking-bf16",
+            ollama_model="qwen3-vl:8b-thinking-bf16",
+        ),
+        ProviderRun(
+            label="gemma4:31b-it-q4_K_M",
+            result_name="gemma4-31b-it-q4_K_M",
+            ollama_model="gemma4:31b-it-q4_K_M",
+        ),
+        ProviderRun(
+            label="gemma4:12b-it-bf16",
+            result_name="gemma4-12b-it-bf16",
+            ollama_model="gemma4:12b-it-bf16",
+        ),
+        ProviderRun(
+            label="qwen3.5:9b-bf16",
+            result_name="qwen3.5-9b-bf16",
+            ollama_model="qwen3.5:9b-bf16",
+        ),
+        ProviderRun(
+            label="qwen3.6:35b-a3b",
+            result_name="qwen3.6-35b-a3b",
+            ollama_model="qwen3.6:35b-a3b",
         ),
     )
-    
-    #provider_order: tuple[ProviderRun, ...] = (
-    #    ProviderRun("gemma4:31b-it-q4_K_M", "gemma4:31b-it-q4_K_M"),
-    #    ProviderRun("gemma4:12b-it-bf16", "gemma4:12b-it-bf16"),
-    #    ProviderRun("qwen3-vl:8b-instruct-bf16", "qwen3-vl:8b-instruct-bf16"),
-    #    ProviderRun("qwen3.6:35b-a3b", "qwen3.6:35b-a3b")
-    #)
+
+    """provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun(
+            label="detikzify-2-5-8b",
+            result_name="detikzify-2-5-8b",
+            ollama_model="detikzify-2-5-8b",
+        ),
+    )"""
+
+    """provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun(
+            label="geotikzbridge-8b",
+            result_name="geotikzbridge-8b",
+            ollama_model="geotikzbridge-8b",
+        ),
+    )"""
+
+    """provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun(
+            label="qwen3-vl:8b-instruct-bf16",
+            result_name="qwen3-vl-8b-instruct-bf16",
+            ollama_model="qwen3-vl:8b-instruct-bf16",
+        ),
+        ProviderRun(
+            label="gemma4:31b-it-q4_K_M",
+            result_name="gemma4-31b-it-q4_K_M",
+            ollama_model="gemma4:31b-it-q4_K_M",
+        ),
+        ProviderRun(
+            label="gemma4:12b-it-bf16",
+            result_name="gemma4-12b-it-bf16",
+            ollama_model="gemma4:12b-it-bf16",
+        ),
+        ProviderRun(
+            label="qwen3.5:9b-bf16",
+            result_name="qwen3.5-9b-bf16",
+            ollama_model="qwen3.5:9b-bf16",
+        ),
+        ProviderRun(
+            label="qwen3.6:35b-a3b",
+            result_name="qwen3.6-35b-a3b",
+            ollama_model="qwen3.6:35b-a3b",
+        ),
+    )"""
 
 
 @dataclass(frozen=True)
