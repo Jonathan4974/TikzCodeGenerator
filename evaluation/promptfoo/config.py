@@ -207,6 +207,7 @@ def apply_runtime_environment() -> dict[str, str]:
         "PROMPTFOO_ASSERTIONS_MAX_CONCURRENCY": str(
             PROMPTFOO.assertions_max_concurrency
         ),
+        "HF_HUB_ENABLE_HF_TRANSFER": "0",
         "HF_HOME": str(PATHS.model_cache / "huggingface"),
         "HUGGINGFACE_HUB_CACHE": str(PATHS.model_cache / "huggingface" / "hub"),
         "HF_HUB_CACHE": str(PATHS.model_cache / "huggingface" / "hub"),

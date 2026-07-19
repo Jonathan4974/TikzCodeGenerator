@@ -18,40 +18,29 @@ import os
 #                because the text is not removed for the remaining rows. Removing the text
 #                is a augmentation technique. Therefore you can also use train=False and set
 #                num=absolute_num.
-"""SPLITS: dict[str, list[dict]] = {
-    "our_dataset_benchmark": [
-        {
-            "type": "simple_llm_description",
-            "num": 700,
-            "absolute_num": 50_000,
-            "train": False,
-        },
-        {
-            "type": "full_cleaning",
-            "num": 700,
-            "absolute_num": 50_000,
-            "train": False,
-        },
-        {
-            "type": "deterministic_cleaning",
-            "num": 700,
-            "absolute_num": 50_000,
-            "train": False,
-        },
-    ],
-}"""
-
-
 SPLITS: dict[str, list[dict]] = {
     "new_bench_set": [
         {
             "type": "simple_llm_description",
-            "num": 600,
-            "absolute_num": 600,
+            "num": 650,
+            "absolute_num": 52402,
+            "train": False,
+        },
+        {
+            "type": "full_cleaning",
+            "num": 650,
+            "absolute_num": 52402,
+            "train": False,
+        },
+        {
+            "type": "deterministic_cleaning",
+            "num": 650,
+            "absolute_num": 52402,
             "train": False,
         },
     ],
 }
+
 
 HF_REPO_ID = "loss-boss/tikz-dataset"
 HF_CACHE_DIR = Path("../hf_cache")

@@ -66,6 +66,7 @@ async def generate(
     thinking_token_multiplier: int = Form(2, ge=1),
     debug: bool = Form(False),
     model: str = Form(...),
+    seed: int = Form(42),
 ) -> dict:
     image_data = await image.read()
     if not image_data:
@@ -103,7 +104,11 @@ async def generate(
         "stream": False,
         "think": think,
         "options": {
-            "temperature": 0,
+            "temperature": 0.0,
+            "seed": seed,
+            "top_k": 1,
+            "top_p": 1.0,
+            "min_p": 0.0,
             "num_predict": effective_num_predict,
             "num_ctx": effective_num_ctx,
         },
