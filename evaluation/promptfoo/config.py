@@ -60,7 +60,7 @@ class Promptfoo:
     sequential_providers: bool = True
     unload_ollama: bool = True
     ollama_url: str = "http://127.0.0.1:11434"
-    provider_order: tuple[ProviderRun, ...] = (
+    """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="qwen3-vl:8b-thinking-bf16",
             result_name="qwen3-vl-8b-thinking-bf16",
@@ -86,15 +86,15 @@ class Promptfoo:
             result_name="qwen3.6-35b-a3b",
             ollama_model="qwen3.6:35b-a3b",
         ),
-    )
+    )"""
 
-    """provider_order: tuple[ProviderRun, ...] = (
+    provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="detikzify-2-5-8b",
             result_name="detikzify-2-5-8b",
             ollama_model="detikzify-2-5-8b",
         ),
-    )"""
+    )
 
     """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(

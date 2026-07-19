@@ -12,7 +12,7 @@ from PIL import Image
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 
-from transformers import BitsAndBytesConfig
+from transformers import BitsAndBytesConfig, set_seed
 from detikzify.model import load
 from detikzify.infer import DetikzifyPipeline
 
@@ -92,56 +92,73 @@ inference_lock = asyncio.Lock()
 @app.post("/detikzify")
 async def detikzify(
     image: UploadFile = File(...),
-    timeout: int = Form(60),
+    seed: int = Form(42, ge=0, le=2**32 - 1),
+    expansions: int = Form(20, ge=1),
 ):
-    logger.info("REQUEST RECEIVED: image=%r timeout=%r", image.filename, timeout)
+    logger.info(
+        "REQUEST RECEIVED: image=%r seed=%r expansions=%r",
+        image.filename,
+        seed,
+        expansions,
+    )
+
     if pipeline is None:
         logger.info("Model is not loaded yet")
-        raise HTTPException(status_code=503, detail="Model is not loaded yet")
+        raise HTTPException(
+            status_code=503,
+            detail="Model is not loaded yet",
+        )
 
     try:
         image_bytes = await image.read()
         pil_image = Image.open(BytesIO(image_bytes)).convert("RGB")
     except Exception as e:
         logger.exception("Invalid image")
-        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid image: {e}",
+        )
+
+    best_fig = None
 
     try:
-        # run model in inference mode. Otherwise the VRAM runs out of memory!!!!!!!!
-
         async with inference_lock:
+            # Setzt Python-, NumPy- und PyTorch-Zufallszustände.
+            set_seed(seed)
+
             best_score = None
-            best_fig = None
 
             with torch.inference_mode():
-                for score, fig in pipeline.simulate(image=pil_image, timeout=timeout):
+                for score, fig in pipeline.simulate(
+                    image=pil_image,
+                    expansions=expansions,
+                    timeout=None,
+                ):
                     if best_score is None or score > best_score:
                         best_score = score
                         best_fig = fig
 
-            if best_fig is None:
+            if best_fig is None or best_score is None:
                 logger.error("No TikZ figure generated")
-                raise HTTPException(status_code=500, detail="No TikZ figure generated")
+                raise HTTPException(
+                    status_code=500,
+                    detail="No TikZ figure generated",
+                )
 
-            output_path = "/tmp/fig.tex"
-            best_fig.save(output_path)
+            tikz_code = best_fig.code
 
-            with open(output_path, "r", encoding="utf-8") as f:
-                tikz_code = f.read()
-
-            # emppty the cuda cache. Otherwise the VRAM runs out of memory!!!!!!!!
-
-            del best_fig
-            gc.collect()
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-        logger.info("Return image")
+        logger.info(
+            "Returning TikZ result: seed=%r expansions=%r score=%r",
+            seed,
+            expansions,
+            float(best_score),
+        )
 
         return JSONResponse({
             "model_path": MODEL_PATH,
             "quantization": QUANTIZATION,
+            "seed": seed,
+            "expansions": expansions,
             "score": float(best_score),
             "tikz": tikz_code,
         })
@@ -152,3 +169,10 @@ async def detikzify(
         logger.exception("DeTikZify request failed")
         raise HTTPException(status_code=500, detail=str(e))
 
+    finally:
+        best_fig = None
+        pil_image.close()
+        gc.collect()
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()

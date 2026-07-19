@@ -18,7 +18,7 @@ import os
 #                because the text is not removed for the remaining rows. Removing the text
 #                is a augmentation technique. Therefore you can also use train=False and set
 #                num=absolute_num.
-SPLITS: dict[str, list[dict]] = {
+"""SPLITS: dict[str, list[dict]] = {
     "our_dataset_benchmark": [
         {
             "type": "simple_llm_description",
@@ -39,19 +39,19 @@ SPLITS: dict[str, list[dict]] = {
             "train": False,
         },
     ],
-}
+}"""
 
 
-"""SPLITS: dict[str, list[dict]] = {
-    "our_dataset_benchmark": [
+SPLITS: dict[str, list[dict]] = {
+    "new_bench_set": [
         {
             "type": "simple_llm_description",
-            "num": 10,
-            "absolute_num": 300,
-            "train": True,
-        }
+            "num": 600,
+            "absolute_num": 600,
+            "train": False,
+        },
     ],
-}"""
+}
 
 HF_REPO_ID = "loss-boss/tikz-dataset"
 HF_CACHE_DIR = Path("../hf_cache")
@@ -66,7 +66,7 @@ OVERWRITE_MODE_OUTPUT = True
 
 # The model supports 8192 tokens; 8000 leaves a small safety buffer.
 TOKENIZER_MODEL = "unsloth/gemma-4-31B-it-unsloth-bnb-4bit"
-MAX_LATEX_TOKENS = 8_000
+MAX_LATEX_TOKENS = 8000
 
 # Input / output columns
 IMAGE_WITH_TEXT_COL = "image_with_text"

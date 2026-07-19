@@ -223,5 +223,5 @@
             path: "{{reference_image}}"
 
         - kind: field
-          name: timeout
-          value: "60"
+          name: expansions
+          value: "10"
