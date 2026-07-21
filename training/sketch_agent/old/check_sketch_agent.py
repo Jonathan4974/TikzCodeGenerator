@@ -22,7 +22,7 @@ from diffusers import ControlNetModel, StableDiffusionXLControlNetPipeline
 from PIL import Image, ImageDraw
 
 from evaluation.promptfoo.pf_utils.clip_siglip_metric import image_cosine_similarity
-from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
+from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_similarity
 
 from .checkpoint_utils import resolve_latest_dir
 from .config import SketchAgentConfig
@@ -158,7 +158,7 @@ def main() -> None:
 
         cc = pixel_congruence_coefficient(generated, target)
         siglip = image_cosine_similarity(pred_path, target_path, model_key="siglip")
-        dreamsim = compute_dreamsim_score(generated, target)
+        dreamsim = compute_dreamsim_similarity(pred_path, target_path)
         print(
             f"{sketch_path.stem}: pixel_cc={cc:.4f} siglip={siglip:.4f} dreamsim={dreamsim:.4f} "
             f"-> {pred_path} ({comparison_path.name})"

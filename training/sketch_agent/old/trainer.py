@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from evaluation.promptfoo.pf_utils.clip_siglip_metric import image_cosine_similarity
-from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_score
+from evaluation.promptfoo.pf_utils.dreamsim_metric import compute_dreamsim_similarity
 
 from .checkpoint_utils import clear_resumable_state, resolve_latest_dir, resolve_run_name, write_latest_manifest
 from .config import SketchAgentConfig
@@ -216,7 +216,7 @@ class SketchAgentTrainer:
             if "siglip" in scores:
                 scores["siglip"].append(image_cosine_similarity(pred_path, pair.target_path, model_key="siglip"))
             if "dreamsim" in scores:
-                scores["dreamsim"].append(compute_dreamsim_score(generated, target))
+                scores["dreamsim"].append(compute_dreamsim_similarity(pred_path, pair.target_path))
 
         for metric, values in scores.items():
             if values and self.writer is not None:
