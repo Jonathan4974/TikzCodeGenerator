@@ -48,6 +48,28 @@ def embedding(image_path: str | Path, model_key: str) -> torch.Tensor:
 
     return F.normalize(features.float(), dim=-1).squeeze(0)
 
+def embedding_training(image_path: str | Path, model_key: str) -> torch.Tensor: 
+    processor, model, device = load_model(model_key) 
+    inputs = processor( images=load_rgb(image_path, RENDER.image_size), return_tensors="pt", ) 
+    inputs = {key: value.to(device) for key, value in inputs.items()} 
+    
+    with torch.inference_mode(): 
+        output = ( 
+            model.get_image_features(**inputs) 
+            if hasattr(model, "get_image_features") 
+            else model(**inputs) 
+        ) 
+    features = ( 
+        output 
+        if isinstance(output, torch.Tensor) 
+        else output.pooler_output 
+    ) 
+    
+    return F.normalize(features.float(), dim=-1).squeeze(0)
 
-def image_cosine_similarity(image_a: str | Path, image_b: str | Path, model_key: str) -> float:
-    return float(torch.dot(embedding(image_a, model_key), embedding(image_b, model_key)).item())
+
+def image_cosine_similarity(image_a: str | Path, image_b: str | Path, model_key: str, train_mode=False) -> float:
+    if not train_mode:
+        return float(torch.dot(embedding(image_a, model_key), embedding(image_b, model_key)).item())
+    elif train_mode:
+        return float(torch.dot(embedding_training(image_a, model_key), embedding_training(image_b, model_key)).item())
