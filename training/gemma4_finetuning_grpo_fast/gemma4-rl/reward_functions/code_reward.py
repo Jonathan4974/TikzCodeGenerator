@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 
 from pf_utils.crystalbleu_metric import compute_crystalbleu_score
-from pf_utils.ted_metric import compute_ted
+from pf_utils.ted_metric import compute_ted, distance_to_similarity
 
 
 @dataclass
@@ -22,7 +22,11 @@ def _finite_float(value, name: str) -> float:
     return result
 
 
-def code_reward_func(generated_code: str, reference_code: str, cfg) -> CodeRewardResult:
+def code_reward_func(
+    generated_code: str,
+    reference_code: str,
+    cfg,
+) -> CodeRewardResult:
     crystalbleu = _finite_float(
         compute_crystalbleu_score(
             reference_code=reference_code,
@@ -44,9 +48,21 @@ def code_reward_func(generated_code: str, reference_code: str, cfg) -> CodeRewar
         "TED",
     )
     ted = max(0.0, ted)
-    ted_penalty = min(ted / cfg.ted_scale, 1.0)
 
-    score = cfg.crystalbleu_weight * crystalbleu - cfg.ted_weight * ted_penalty
+    ted_sim = _finite_float(
+        distance_to_similarity(ted),
+        "TED similarity",
+    )
+    ted_sim = max(0.0, min(1.0, ted_sim))
+
+    weight_sum = cfg.crystalbleu_weight + cfg.ted_weight
+    if weight_sum <= 0:
+        raise ValueError("Code reward weights must have a positive sum.")
+
+    score = (
+        cfg.crystalbleu_weight * crystalbleu
+        + cfg.ted_weight * ted_sim
+    ) / weight_sum
 
     return CodeRewardResult(
         score=float(score),
@@ -56,6 +72,6 @@ def code_reward_func(generated_code: str, reference_code: str, cfg) -> CodeRewar
             f"code_score={score:.3f}; "
             f"crystalbleu={crystalbleu:.3f}; "
             f"ted_distance={ted:.3f}; "
-            f"ted_penalty={ted_penalty:.3f}"
+            f"ted_sim={ted_sim:.3f}"
         ),
     )
