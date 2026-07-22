@@ -29,11 +29,15 @@ python -m training.sketch_agent.build_sketch_dataset \
 # to resume an interrupted run: re-run the exact same command
 
 python -c "
-from datasets import load_dataset
-ds = load_dataset('parquet', data_files='training/sketch_agent/output_final/sketch_dataset/shards/*.parquet', split='train')
-ds.push_to_hub('your-username/your-repo')
+from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
+assemble_dataset_dict('training/sketch_agent/output_final/sketch_dataset').push_to_hub('your-username/your-repo')
 "
 ```
+
+Push with `assemble_dataset_dict` (all splits as one `DatasetDict.push_to_hub` call), not
+split-by-split (pushing splits individually (or with different tooling per split) is
+what causes the HF viewer's `FileFormatMismatchBetweenSplitsError`). One call with every
+split sharing the same schema avoids it.
 
 `--split`/`--source-label` are repeatable and paired positionally, from
 `dataset_loader.SPLITS` (`datikz_v4`, `geotikz_bridge_base`, `our_dataset_train`,

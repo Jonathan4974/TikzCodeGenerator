@@ -13,10 +13,13 @@ rows are flushed to parquet shards under `<output_dir>/shards/` every
 `sbatch --dependency=afterany:$SLURM_JOB_ID build_sketch_dataset.sbatch` - this only runs
 from inside an already-submitted SLURM job, never on its own.
 
-Never pushes to the Hub. Once `<output_dir>/DONE` exists:
-    from datasets import load_dataset
-    ds = load_dataset("parquet", data_files="<output_dir>/shards/*.parquet", split="train")
-    ds.push_to_hub("your-username/your-repo")
+Never pushes to the HF. Once `<output_dir>/DONE` exists, push every split together as
+one `DatasetDict` via `assemble_dataset_dict` (pushing splits one at a time (or with
+different tooling per split) is what causes the HF viewer's
+`FileFormatMismatchBetweenSplitsError`). one `DatasetDict.push_to_hub` call, all splits
+written through the same schema, avoids it:
+    from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
+    assemble_dataset_dict("<output_dir>").push_to_hub("your-username/your-repo")
 
 Usage:
 
@@ -205,6 +208,25 @@ def build_sketch_dataset_incremental(
     return True
 
 
+def assemble_dataset_dict(output_dir: str | Path):
+    """Groups `<output_dir>/shards/*.parquet` by split and loads them into one
+    `datasets.DatasetDict`, all sharing the same schema (`_build_features()`). Push this
+    as a single `DatasetDict.push_to_hub(...)` call rather than pushing splits one at a
+    time: that's what keeps every split in the same file format in the pushed repo."""
+    from datasets import DatasetDict, load_dataset
+
+    shard_dir = Path(output_dir) / "shards"
+    split_names = sorted({path.name.rsplit("_", 2)[0] for path in shard_dir.glob("*.parquet")})
+    return DatasetDict(
+        {
+            split_name: load_dataset(
+                "parquet", data_files=str(shard_dir / f"{split_name}_*.parquet"), split="train"
+            )
+            for split_name in split_names
+        }
+    )
+
+
 def _resolve_self_resubmit_command(
     sbatch_script: Optional[str], job_id: Optional[str], resume_args: List[str]
 ) -> Optional[List[str]]:
@@ -286,9 +308,8 @@ def main() -> None:
     if finished:
         print(f"All splits complete - {args.output_dir}/DONE written.")
         print(f"Shards under {args.output_dir}/shards/. Nothing was pushed - review, then push yourself, e.g.:")
-        print("  from datasets import load_dataset")
-        print(f"  ds = load_dataset('parquet', data_files='{args.output_dir}/shards/*.parquet', split='train')")
-        print("  ds.push_to_hub('your-username/your-repo')")
+        print("  from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict")
+        print(f"  assemble_dataset_dict({args.output_dir!r}).push_to_hub('your-username/your-repo')")
     else:
         print(f"Time limit reached before finishing - checkpoint saved under {args.output_dir}/checkpoint.json.")
         if args.no_self_resubmit:
