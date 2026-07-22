@@ -9,9 +9,13 @@ row's image is UltraSketch output, one where every row's image is displacement-f
 
 - `image_with_text` / `code_with_text` / `llm_description_with_text`
 - `image_without_text_full` / `code_without_text_full` / `llm_description_without_text_full`
+  (only populated for ~10k of the 410k rows - the "no text" augmentation slice; `None` for
+  the rest, not just a missing description)
 
 For each row, `dataset_loader.pick_variant` randomly (50/50) picks one variant and returns
-its **correctly paired** image/code/description.
+its **correctly paired** image/code/description - and falls back to the other variant if the
+drawn one isn't populated for that row (confirmed necessary: crashed a real job otherwise,
+`PIL.Image.open(None)` on a row without the without-text variant).
 
 ## Generating a split
 
