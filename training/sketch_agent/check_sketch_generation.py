@@ -2,7 +2,7 @@
 and saves side-by-side comparisons to check if everything alright.
 
 Usage:
-    python -m training.sketch_agent.check_sketch_generation --split datikz_v4 --num-samples 2
+    python -m training.sketch_agent.check_sketch_generation --num-samples 2
 """
 from __future__ import annotations
 
@@ -51,7 +51,6 @@ def save_comparison(clean: Image.Image, ultrasketch: Image.Image, displacement: 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", type=str, required=True, help="a split name from dataset_loader.SPLITS")
     parser.add_argument("--num-samples", type=int, default=2)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
@@ -65,8 +64,9 @@ def main() -> None:
     try:
         import torch
 
-        for i, (row_id, image) in enumerate(iter_clean_images(args.split, args.num_samples, seed=seed)):
+        for i, (row_id, variant, image) in enumerate(iter_clean_images(args.num_samples, seed=seed)):
             sample_seed = seed + i
+            row_id = f"{row_id}_{variant}"
 
             # Force each method deterministically for eyeballing (sketch_probability=1.0
             # "Training" draws use the default 50/25/25 split.

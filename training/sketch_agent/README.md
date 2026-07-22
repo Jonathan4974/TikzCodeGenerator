@@ -1,82 +1,101 @@
 # Sketch Agent - synthetic-sketch data augmentation
 
-A clean image is turned into a synthetic "sketch" by one of two methods:
+Builds two new method-dedicated splits directly on `loss-boss/tikz-train`: one where every
+row's image is UltraSketch output, one where every row's image is displacement-field output.
 
-- **UltraSketch** (`nllg/ultrasketch`) - a fine-tuned img2img diffusion model.
-- **Random displacement field** - a classical Gaussian-filtered pixel warp, no learning.
+## Source data
 
-The pipeline has two stages:
+`loss-boss/tikz-train` is one split, `train` (410k rows)
 
-1. **Offline (`build_sketch_dataset.py`)** - for every row, generates a sketch: one draw
-   between UltraSketch (50%) and displacement (50%). Writes rows with
-   `image`/`sketch`/`code`/`description`/`source` for the dataset we're building
-   (`loss-boss/tikz-dataset`).
-2. **Train-time (`sketch_choice_dataset.py`)** - `SketchChoiceDataset` wraps the pushed
-   dataset and draws, on every access, whether to feed the clean `image` or the
-   precomputed `sketch`.
+- `image_with_text` / `code_with_text` / `llm_description_with_text`
+- `image_without_text_full` / `code_without_text_full` / `llm_description_without_text_full`
 
-Composed, this gives 50% clean / 25% ultrasketch / 25% displacement overall.
+For each row, `dataset_loader.pick_variant` randomly (50/50) picks one variant and returns
+its **correctly paired** image/code/description.
 
-## Building the training dataset (offline)
+## Generating a split
+
+Every row in a given run is sketch-ified by the one method that run is dedicated to.
+
+Two dedicated scripts, already set up for a 100-row first pass:
+
+```bash
+sbatch training/sketch_agent/build_sketch_dataset_displacement.sbatch  # CPU-only, no GPU requested
+sbatch training/sketch_agent/build_sketch_dataset_ultrasketch.sbatch   # needs a GPU
+```
+
+Once the 100-row pass looks correct, scale up by editing the `--max-rows 100` line in
+whichever script (or override without editing: `sbatch build_sketch_dataset_ultrasketch.sbatch --max-rows 500000` -
+extra args are appended after the hardcoded ones and win, since argparse keeps the last
+value of a repeated flag).
+
+Both self-resubmit (`sbatch --dependency=afterany:$SLURM_JOB_ID <the same script>` - each
+passes `--sbatch-script "$0"` so it always resubmits *itself*, not the other one) if the 8h
+limit is hit before finishing.
+
+**Interactively / not on SLURM** - the two commands the scripts above wrap:
 
 ```bash
 python -m training.sketch_agent.build_sketch_dataset \
-    --split datikz_v4 --source-label datikzv4 \
-    --split geotikz_bridge_base --source-label geotikz \
-    --output-dir training/sketch_agent/output_final/sketch_dataset \
+    --method displacement \
+    --output-dir training/sketch_agent/output_final/sketch_dataset_displacement \
     --max-rows 100
 
-# to resume an interrupted run: re-run the exact same command
-
-python -c "
-from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
-assemble_dataset_dict('training/sketch_agent/output_final/sketch_dataset').push_to_hub('your-username/your-repo')
-"
+python -m training.sketch_agent.build_sketch_dataset \
+    --method ultrasketch \
+    --output-dir training/sketch_agent/output_final/sketch_dataset_ultrasketch \
+    --max-rows 100
 ```
 
-Push with `assemble_dataset_dict` (all splits as one `DatasetDict.push_to_hub` call), not
-split-by-split (pushing splits individually (or with different tooling per split) is
-what causes the HF viewer's `FileFormatMismatchBetweenSplitsError`). One call with every
-split sharing the same schema avoids it.
+## Pushing both splits
 
-`--split`/`--source-label` are repeatable and paired positionally, from
-`dataset_loader.SPLITS` (`datikz_v4`, `geotikz_bridge_base`, `our_dataset_train`,
-`our_dataset_benchmark`). `--source-label` is used unless a row already carries its own
-`source` value.
-
-## Consuming the training dataset (train-time)
+Once both output dirs have `DONE` (or you're pushing a partial/first-pass run), combine and
+push in **one** `DatasetDict.push_to_hub` call - pushing splits individually, or with
+different tooling per split, is what causes the HF viewer's
+`FileFormatMismatchBetweenSplitsError`:
 
 ```python
-from training.sketch_agent import SketchChoiceDataset
-from datasets import load_dataset
+from datasets import DatasetDict
+from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
 
-ds = SketchChoiceDataset(load_dataset("loss-boss/tikz-dataset", split="train"))
-item = ds[0]  # {"input_image": ..., "code": ..., "description": ..., "source": ..., "used_sketch": bool}
+displacement = assemble_dataset_dict("training/sketch_agent/output_final/sketch_dataset_displacement")
+ultrasketch = assemble_dataset_dict("training/sketch_agent/output_final/sketch_dataset_ultrasketch")
+DatasetDict({**displacement, **ultrasketch}).push_to_hub("loss-boss/tikz-train")
 ```
 
-Standalone and import-only, meant to be dropped into `training/gemma4_finetuning_grpo_fast/`'s
-training loop.
+Each new split's rows have: `image` (the sketch - this split's whole point is every row's
+image is the sketch, there's no separate clean-image column here), `code` (correctly paired
+per the rule above), `description` (may be null), `source_variant` (`"with_text"` or
+`"without_text"` - which source pair this row came from), `sketch_method` (`"ultrasketch"`
+or `"displacement"`: constant within one split, kept for clarity).
+
+`assemble_dataset_dict(..., rename={...})` renames the inferred split (the `--split-name`
+value, default `--method`) before pushing, if you want the pushed splits named something
+other than `ultrasketch`/`displacement`.
+
 
 ## Files
 
-- `config.py` - `SketchAugmentationConfig`: method params + the two-stage knobs
-  (`sketch_always_populated`, `train_time_sketch_probability`) + dataset-sourcing knobs.
-- `sketch_generation.py` - `generate_synthetic_sketch(image, seed, sketch_probability, ultrasketch_probability, ...)`,
-  the three-way draw (original/ultrasketch/displacement) in one call. Used by
-  `build_sketch_dataset.py` with `sketch_probability=1.0` to always substitute.
-- `dataset_loader.py` - per-split loading against `loss-boss/tikz-dataset`'s four known
-  splits (`SPLITS`). `code_column(split_name)` returns `"response"` for
-  `geotikz_bridge_base`, `"code"` for everything else, per the dataset card.
-- `check_dataset_schema.py` - manual script, needs network: streams one row per split and
-  prints its real columns, to verify the rest of the schema (`our_dataset_train`/
-  `our_dataset_benchmark` columns aren't documented on the dataset card).
-- `check_sketch_generation.py` - manual script, needs GPU + network: runs both methods
-  on real images, saves comparison PNGs under `output_check/sketch_generation/`.
+- `config.py` - `SketchAugmentationConfig`: method params (`displacement_alpha`/`sigma`) +
+  `max_rows`.
+- `sketch_generation.py` - `generate_synthetic_sketch(image, seed, sketch_probability, ultrasketch_probability, ...)`.
+  `build_sketch_dataset.py` always calls this with `sketch_probability=1.0` (every row in a
+  dedicated split is substituted) and `ultrasketch_probability` forced to `0.0`/`1.0` per the
+  run's `--method` (never a real per-row mix in this pipeline's usage, though the function
+  itself still supports one).
+- `dataset_loader.py` - loads `loss-boss/tikz-train`'s single `train` split;
+  `pick_variant(row, seed)` does the correctly-paired with-text/without-text-full draw.
+- `check_dataset_schema.py` - manual script, needs network: streams a few `train` rows and
+  prints their real columns.
+- `check_sketch_generation.py` - manual script, needs GPU + network: runs both methods on a
+  couple of real images (using whichever variant `pick_variant` draws), saves comparison
+  PNGs under `output_check/sketch_generation/`.
 - `build_sketch_dataset.py` - offline generation stage: checkpointed, resumable,
-  self-resubmitting via `build_sketch_dataset.sbatch`.
-- `build_sketch_dataset.sbatch` - SLURM script `build_sketch_dataset.py` resubmits
-  itself through.
-- `sketch_choice_dataset.py` - `SketchChoiceDataset`, the train-time loading stage.
+  self-resubmitting via whichever `--sbatch-script` launched it.
+- `build_sketch_dataset_displacement.sbatch` / `build_sketch_dataset_ultrasketch.sbatch` -
+  dedicated SLURM launchers, one per method, so they run as independent jobs (displacement
+  requests no GPU). `build_sketch_dataset.sbatch` (generic, `"$@"`-driven) still exists too,
+  for ad hoc/other args.
 
 ## Running
 
@@ -86,13 +105,13 @@ conda activate sketch-agent
 
 pytest training/sketch_agent/tests/
 
-# Verify a split's real columns
+# Verify the real columns
 python -m training.sketch_agent.check_dataset_schema
-python -m training.sketch_agent.check_dataset_schema --splits datikz_v4 our_dataset_benchmark
+python -m training.sketch_agent.check_dataset_schema --num-rows 5
 
-python -m training.sketch_agent.check_sketch_generation --split datikz_v4 --num-samples 2
+python -m training.sketch_agent.check_sketch_generation --num-samples 2
 
 python -m training.sketch_agent.build_sketch_dataset \
-    --split datikz_v4 --source-label datikzv4 \
-    --output-dir training/sketch_agent/output_final/sketch_dataset --max-rows 100
+    --method displacement \
+    --output-dir training/sketch_agent/output_final/sketch_dataset_displacement --max-rows 100
 ```

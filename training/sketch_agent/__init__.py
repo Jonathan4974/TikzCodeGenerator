@@ -1,12 +1,12 @@
 from .config import SketchAugmentationConfig
 from .dataset_loader import (
     HF_REPO_ID,
-    SPLITS,
-    code_column,
+    SPLIT_NAME,
+    VARIANT_COLUMNS,
     iter_clean_images,
-    load_split,
+    load_train_split,
+    pick_variant,
 )
-from .sketch_choice_dataset import SketchChoiceDataset
 from .sketch_generation import (
     generate_synthetic_sketch,
     load_ultrasketch_pipeline,
@@ -19,11 +19,11 @@ from .sketch_generation import (
 __all__ = [
     "SketchAugmentationConfig",
     "HF_REPO_ID",
-    "SPLITS",
-    "code_column",
+    "SPLIT_NAME",
+    "VARIANT_COLUMNS",
     "iter_clean_images",
-    "load_split",
-    "SketchChoiceDataset",
+    "load_train_split",
+    "pick_variant",
     "generate_synthetic_sketch",
     "load_ultrasketch_pipeline",
     "random_displacement_field",

@@ -1,32 +1,15 @@
-"""Offline dataset builder: generates a `sketch` column for every row of the source
-split(s) and writes image/sketch/code/description/source rows to disk.
-
-Per row, one draw picks the sketch method - 50% UltraSketch, 50% displacement field,
-never both. Uses a reproducible seed (`base_seed + row_index`) so the job is resumable.
-The clean-vs-sketch choice used for actual training happens later, in
-sketch_choice_dataset.py - this always generates a sketch.
-
-Checkpoint/resume: progress per split is written to `<output_dir>/checkpoint.json`, and
-rows are flushed to parquet shards under `<output_dir>/shards/` every
-`checkpoint_interval` rows, so a killed/resubmitted job picks up where it left off. If
-`--time-limit-hours` is hit before every split finishes, it self-resubmits via
-`sbatch --dependency=afterany:$SLURM_JOB_ID build_sketch_dataset.sbatch` - this only runs
-from inside an already-submitted SLURM job, never on its own.
-
-Never pushes to the HF. Once `<output_dir>/DONE` exists, push every split together as
-one `DatasetDict` via `assemble_dataset_dict` (pushing splits one at a time (or with
-different tooling per split) is what causes the HF viewer's
-`FileFormatMismatchBetweenSplitsError`). one `DatasetDict.push_to_hub` call, all splits
-written through the same schema, avoids it:
-    from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
-    assemble_dataset_dict("<output_dir>").push_to_hub("your-username/your-repo")
+"""Offline dataset builder: generates one method-dedicated split for `loss-boss/tikz-train`.
 
 Usage:
 
     python -m training.sketch_agent.build_sketch_dataset \\
-        --split datikz_v4 --source-label datikzv4 \\
-        --split geotikz_bridge_base --source-label geotikz \\
-        --output-dir training/sketch_agent/output_final/sketch_dataset \\
+        --method displacement \\
+        --output-dir training/sketch_agent/output_final/sketch_dataset_displacement \\
+        --max-rows 100
+
+    python -m training.sketch_agent.build_sketch_dataset \\
+        --method ultrasketch \\
+        --output-dir training/sketch_agent/output_final/sketch_dataset_ultrasketch \\
         --max-rows 100
 """
 from __future__ import annotations
@@ -38,31 +21,29 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 from .config import SketchAugmentationConfig
-from .dataset_loader import IMAGE_COLUMN, code_column, load_split
+from .dataset_loader import load_train_split, pick_variant
 from .sketch_generation import (
     generate_synthetic_sketch,
     load_ultrasketch_pipeline,
     release_ultrasketch_pipeline,
 )
 
+METHODS = ("ultrasketch", "displacement")
+
 
 def _build_features():
-    """Lazy import - keeps this module importable without `datasets` installed."""
+    """Lazy import: keeps this module importable without `datasets` installed."""
     from datasets import Features, Image as HFImage, Value
 
     return Features(
         {
-            "image": HFImage(),
-            "sketch": HFImage(),
-            "code": Value("string"),
+            "image": HFImage(),  # the sketch
             "description": Value("string"),
-            "source": Value("string"),
-            # Which method produced `sketch` - useful for verifying the realized split
-            # lands near 50/50. Drop it before pushing if you don't want it.
-            "sketch_method": Value("string"),
+            "source_variant": Value("string"),  # "with_text" or "without_text"
+            "sketch_method": Value("string"),  # "ultrasketch" or "displacement"
         }
     )
 
@@ -93,18 +74,16 @@ def _write_shard(output_dir: Path, split_name: str, start_index: int, rows: List
     Dataset.from_list(rows, features=_build_features()).to_parquet(str(shard_path))
 
 
-def _flush_and_checkpoint(
-    output_dir: Path, split_name: str, row_index: int, buffer: List[dict], progress: dict
-) -> None:
+def _flush_and_checkpoint(output_dir: Path, split_name: str, row_index: int, buffer: List[dict], progress: dict) -> None:
     if buffer:
         _write_shard(output_dir, split_name, row_index - len(buffer), buffer)
-    progress[split_name] = row_index
+    progress["row_index"] = row_index
     _save_checkpoint(output_dir, progress)
 
 
-def _process_split(
+def _process_stream(
+    method: str,
     split_name: str,
-    source_label: str,
     pipe: Any,
     cfg: SketchAugmentationConfig,
     base_seed: int,
@@ -113,17 +92,17 @@ def _process_split(
     checkpoint_interval: int,
     deadline: float,
 ) -> bool:
-    """Processes `split_name` from wherever `progress` says it left off. Returns True if
-    the split finished (exhausted the stream, or hit cfg.max_rows), False if it stopped
-    early because `deadline` (time.monotonic()) was reached."""
-    start_index = progress.get(split_name, 0)
+    """Processes the `train` split from wherever `progress` says it left off. Returns True if
+    it finished (exhausted the stream, or hit cfg.max_rows), False if it stopped early because
+    `deadline` (time.monotonic()) was reached."""
+    start_index = progress.get("row_index", 0)
     if cfg.max_rows is not None and start_index >= cfg.max_rows:
         return True
 
-    ds = load_split(split_name, streaming=True)
+    ds = load_train_split(streaming=True)
     window = itertools.islice(ds, start_index, cfg.max_rows)
 
-    sketch_probability = 1.0 if cfg.sketch_always_populated else 0.5
+    ultrasketch_probability = 1.0 if method == "ultrasketch" else 0.0
 
     buffer: List[dict] = []
     row_index = start_index
@@ -132,23 +111,19 @@ def _process_split(
             _flush_and_checkpoint(output_dir, split_name, row_index, buffer, progress)
             return False
 
-        image = row[IMAGE_COLUMN]
-        if not hasattr(image, "convert"):
+        seed = base_seed + row_index
+        variant, clean_image, code, description = pick_variant(row, seed=seed)
+        if not hasattr(clean_image, "convert"):
             from PIL import Image as PILImage
 
-            image = PILImage.open(image)
-        image = image.convert("RGB")
+            clean_image = PILImage.open(clean_image)
+        clean_image = clean_image.convert("RGB")
 
-        code = row[code_column(split_name)]
-        description = row.get("description")
-        source = row.get("source") or source_label
-
-        seed = base_seed + row_index
-        sketch, method = generate_synthetic_sketch(
-            image,
+        sketch, sketch_method = generate_synthetic_sketch(
+            clean_image,
             seed=seed,
-            sketch_probability=sketch_probability,
-            ultrasketch_probability=cfg.ultrasketch_probability,
+            sketch_probability=1.0,
+            ultrasketch_probability=ultrasketch_probability,
             displacement_alpha=cfg.displacement_alpha,
             displacement_sigma=cfg.displacement_sigma,
             pipe=pipe,
@@ -156,12 +131,11 @@ def _process_split(
 
         buffer.append(
             {
-                "image": image,
-                "sketch": sketch,
+                "image": sketch,
                 "code": code,
                 "description": description,
-                "source": source,
-                "sketch_method": method,
+                "source_variant": variant,
+                "sketch_method": sketch_method,
             }
         )
         row_index += 1
@@ -176,50 +150,58 @@ def _process_split(
 
 
 def build_sketch_dataset_incremental(
-    splits_and_labels: List[Tuple[str, str]],
+    method: str,
+    split_name: str,
     output_dir: str | Path,
     cfg: Optional[SketchAugmentationConfig] = None,
     base_seed: int = 3407,
     checkpoint_interval: int = 100,
     time_limit_hours: float = 7.5,
 ) -> bool:
-    """Runs (or resumes) offline sketch-column generation for each split in order.
-    Returns True if every split finished; False if the time limit was hit first, in
-    which case re-calling this with the same `output_dir` resumes from
-    `<output_dir>/checkpoint.json`."""
+    """Runs (or resumes) offline sketch generation for one method-dedicated split. Returns
+    True if it finished; False if the time limit was hit first, in which case re-calling this
+    with the same `output_dir` resumes from `<output_dir>/checkpoint.json`."""
+    if method not in METHODS:
+        raise ValueError(f"unknown method {method!r}, expected one of {METHODS}")
+
     cfg = cfg or SketchAugmentationConfig()
     output_dir = Path(output_dir)
     progress = _load_checkpoint(output_dir)
     deadline = time.monotonic() + time_limit_hours * 3600
 
-    pipe = load_ultrasketch_pipeline()
+    pipe = load_ultrasketch_pipeline() if method == "ultrasketch" else None
     try:
-        for split_name, source_label in splits_and_labels:
-            finished = _process_split(
-                split_name, source_label, pipe, cfg, base_seed, output_dir, progress,
-                checkpoint_interval, deadline,
-            )
-            if not finished:
-                return False
+        finished = _process_stream(
+            method, split_name, pipe, cfg, base_seed, output_dir, progress, checkpoint_interval, deadline,
+        )
     finally:
-        release_ultrasketch_pipeline(pipe)
+        if pipe is not None:
+            release_ultrasketch_pipeline(pipe)
 
-    (output_dir / "DONE").write_text("all splits complete\n", encoding="utf-8")
+    if not finished:
+        return False
+
+    (output_dir / "DONE").write_text("finished\n", encoding="utf-8")
     return True
 
 
-def assemble_dataset_dict(output_dir: str | Path):
+def assemble_dataset_dict(output_dir: str | Path, rename: Optional[dict[str, str]] = None):
     """Groups `<output_dir>/shards/*.parquet` by split and loads them into one
     `datasets.DatasetDict`, all sharing the same schema (`_build_features()`). Push this
     as a single `DatasetDict.push_to_hub(...)` call rather than pushing splits one at a
-    time: that's what keeps every split in the same file format in the pushed repo."""
+    time: that's what keeps every split in the same file format in the pushed repo.
+
+    `rename` maps the split name inferred from shard filenames (the `--split-name` value the
+    builder run used, e.g. `"ultrasketch"`) to a different key in the returned dict, if you
+    want the pushed split named something else."""
     from datasets import DatasetDict, load_dataset
 
+    rename = rename or {}
     shard_dir = Path(output_dir) / "shards"
     split_names = sorted({path.name.rsplit("_", 2)[0] for path in shard_dir.glob("*.parquet")})
     return DatasetDict(
         {
-            split_name: load_dataset(
+            rename.get(split_name, split_name): load_dataset(
                 "parquet", data_files=str(shard_dir / f"{split_name}_*.parquet"), split="train"
             )
             for split_name in split_names
@@ -231,9 +213,9 @@ def _resolve_self_resubmit_command(
     sbatch_script: Optional[str], job_id: Optional[str], resume_args: List[str]
 ) -> Optional[List[str]]:
     """Only resolves to a command when SLURM_JOB_ID is set, i.e. this is running inside
-    a submitted SLURM job and not when run interactively. `resume_args` (the --split/
-    --source-label/--output-dir/etc. this run was given) is re-passed explicitly since
-    nothing about them is recoverable from disk."""
+    a submitted SLURM job and not when run interactively. `resume_args` (the --method/
+    --output-dir/etc. this run was given) is re-passed explicitly since nothing about them
+    is recoverable from disk."""
     if not job_id:
         return None
     script = sbatch_script or str(Path(__file__).with_name("build_sketch_dataset.sbatch"))
@@ -250,14 +232,10 @@ def _maybe_self_resubmit(sbatch_script: Optional[str], resume_args: List[str]) -
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--method", choices=METHODS, required=True, help="which sketch method this run is dedicated to")
     parser.add_argument(
-        "--split", action="append", required=True, dest="splits",
-        help="a split name from dataset_loader.SPLITS; repeat for multiple splits",
-    )
-    parser.add_argument(
-        "--source-label", action="append", required=True, dest="source_labels",
-        help="source label for the --split at the same position (e.g. datikzv4, geotikz); "
-             "used unless the row already has its own 'source' value",
+        "--split-name", type=str, default=None,
+        help="push-time split name (also the shard-filename prefix); defaults to --method",
     )
     parser.add_argument("--output-dir", type=str, required=True)
     parser.add_argument("--base-seed", type=int, default=3407)
@@ -271,12 +249,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--max-rows", type=int, default=None,
-        help="cap rows PER SPLIT - final size isn't decided yet; leave unset to process a whole split, "
-             "or pass e.g. 50-100 for a first correctness pass",
-    )
-    parser.add_argument(
-        "--ultrasketch-probability", type=float, default=None,
-        help="override SketchAugmentationConfig.ultrasketch_probability (default 0.5)",
+        help="cap total rows for this run",
     )
     parser.add_argument(
         "--no-self-resubmit", action="store_true",
@@ -285,19 +258,12 @@ def main() -> None:
     parser.add_argument("--sbatch-script", type=str, default=None)
     args = parser.parse_args()
 
-    if len(args.splits) != len(args.source_labels):
-        raise ValueError(
-            "--split and --source-label must be passed the same number of times, in "
-            f"matching order (got {len(args.splits)} splits, {len(args.source_labels)} labels)"
-        )
-
+    split_name = args.split_name or args.method
     cfg = SketchAugmentationConfig(max_rows=args.max_rows)
-    if args.ultrasketch_probability is not None:
-        cfg.ultrasketch_probability = args.ultrasketch_probability
 
-    splits_and_labels = list(zip(args.splits, args.source_labels))
     finished = build_sketch_dataset_incremental(
-        splits_and_labels,
+        args.method,
+        split_name,
         args.output_dir,
         cfg=cfg,
         base_seed=args.base_seed,
@@ -306,33 +272,37 @@ def main() -> None:
     )
 
     if finished:
-        print(f"All splits complete - {args.output_dir}/DONE written.")
-        print(f"Shards under {args.output_dir}/shards/. Nothing was pushed - review, then push yourself, e.g.:")
+        print(f"Finished: {args.output_dir}/DONE written.")
+        print(f"Shards under {args.output_dir}/shards/. Nothing was pushed: review, then push yourself, e.g.:")
+        print("  from datasets import DatasetDict")
         print("  from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict")
-        print(f"  assemble_dataset_dict({args.output_dir!r}).push_to_hub('your-username/your-repo')")
+        print(f"  {split_name} = assemble_dataset_dict({args.output_dir!r})")
+        print("  # ... assemble the OTHER method's split the same way, then in ONE call:")
+        print(f"  DatasetDict({{**{split_name}, **other_split}}).push_to_hub('loss-boss/tikz-train')")
     else:
-        print(f"Time limit reached before finishing - checkpoint saved under {args.output_dir}/checkpoint.json.")
+        print(f"Time limit reached before finishing: checkpoint saved under {args.output_dir}/checkpoint.json.")
         if args.no_self_resubmit:
             print("--no-self-resubmit set: not resubmitting. Re-run the same command to resume.")
         else:
-            resume_args: List[str] = []
-            for split_name, source_label in zip(args.splits, args.source_labels):
-                resume_args += ["--split", split_name, "--source-label", source_label]
-            resume_args += ["--output-dir", args.output_dir, "--base-seed", str(args.base_seed)]
-            resume_args += ["--checkpoint-interval", str(args.checkpoint_interval)]
-            resume_args += ["--time-limit-hours", str(args.time_limit_hours)]
+            resume_args: List[str] = [
+                "--method", args.method,
+                "--split-name", split_name,
+                "--output-dir", args.output_dir,
+                "--base-seed", str(args.base_seed),
+                "--checkpoint-interval", str(args.checkpoint_interval),
+                "--time-limit-hours", str(args.time_limit_hours),
+            ]
             if args.max_rows is not None:
                 resume_args += ["--max-rows", str(args.max_rows)]
-            if args.ultrasketch_probability is not None:
-                resume_args += ["--ultrasketch-probability", str(args.ultrasketch_probability)]
+            if args.sbatch_script is not None:
+                resume_args += ["--sbatch-script", args.sbatch_script]
 
             command = _maybe_self_resubmit(args.sbatch_script, resume_args)
             if command:
                 print(f"Self-resubmitted: {command}")
             else:
                 print(
-                    "No SLURM_JOB_ID in environment - not self-resubmitting (not running inside a "
-                    "submitted job). Re-run the same command manually to resume."
+                    "No SLURM_JOB_ID in environment. Re-run the same command manually to resume."
                 )
 
 
