@@ -51,14 +51,14 @@ class SFTConfig:
     num_examples_val: int | None = None
 
     learning_rate: float = 2e-4
-    epochs: float = 30.0
+    epochs: float = 3.0
     max_steps: int = -1
     save_steps: int = 100
     eval_steps: int = 100
     logging_steps: int = 1
     warmup_steps: int = 10
-    batch_size: int = 1
-    gradient_accumulation_steps: int = 8
+    batch_size: int = 2
+    gradient_accumulation_steps: int = 1
     resume_from_checkpoint: bool = False
 
 
