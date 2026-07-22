@@ -41,6 +41,7 @@ def _build_features():
     return Features(
         {
             "image": HFImage(),  # the sketch
+            "code": Value("string"),
             "description": Value("string"),
             "source_variant": Value("string"),  # "with_text" or "without_text"
             "sketch_method": Value("string"),  # "ultrasketch" or "displacement"

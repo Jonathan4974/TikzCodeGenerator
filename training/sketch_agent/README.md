@@ -71,7 +71,10 @@ Each new split's rows have: `image` (the sketch - this split's whole point is ev
 image is the sketch, there's no separate clean-image column here), `code` (correctly paired
 per the rule above), `description` (may be null), `source_variant` (`"with_text"` or
 `"without_text"` - which source pair this row came from), `sketch_method` (`"ultrasketch"`
-or `"displacement"`: constant within one split, kept for clarity).
+or `"displacement"`: constant within one split, kept for clarity). This exact set is also
+`_build_features()`'s schema in `build_sketch_dataset.py` - keep the two in sync (a prior
+mismatch, the schema missing `code`, crashed a real job with `KeyError: 'code'` inside
+`datasets`' `encode_column`; regression-tested in `test_write_shard_accepts_a_real_row_with_every_buffered_field`).
 
 `assemble_dataset_dict(..., rename={...})` renames the inferred split (the `--split-name`
 value, default `--method`) before pushing, if you want the pushed splits named something
