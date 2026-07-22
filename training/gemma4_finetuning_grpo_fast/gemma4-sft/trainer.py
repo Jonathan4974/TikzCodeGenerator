@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import torch
-from trl import SFTConfig, SFTTrainer
 from unsloth import FastVisionModel
 from unsloth.trainer import UnslothVisionDataCollator
+
+import torch
+from trl import SFTConfig, SFTTrainer
 
 
 def train_sft(cfg, model, processor, train_dataset, eval_dataset) -> None:

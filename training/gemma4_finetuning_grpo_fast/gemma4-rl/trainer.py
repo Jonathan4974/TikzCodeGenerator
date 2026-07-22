@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from unsloth import FastVisionModel
+
 import torch
 from trl import GRPOConfig, GRPOTrainer
-from unsloth import FastVisionModel
 
 from rewards import TikZReward
 from tb_callback import TensorBoardRewardCallback
