@@ -1,6 +1,4 @@
 __pycache__
-# local run/test output folders
-output/
-output_smoke/*
-output_overfit/*
-logs/
+output_check/
+tests/
+conftest.py

@@ -1,129 +1,30 @@
+"""Config for the two-stage sketch pipeline: build_sketch_dataset.py generates the
+`sketch` column offline, sketch_choice_dataset.py picks clean-vs-sketch at train time."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Optional, Tuple
-
-import torch
+from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
-class SketchAgentConfig:
-    """Configuration for the sketch-agent SDXL+ControlNet+LoRA training pipeline"""
-
-    # paths
-    output_dir: str = "training/sketch_agent/output"
-    checkpoint_dir: str = "training/sketch_agent/output/checkpoints"
-    lora_output_dir: str = "training/sketch_agent/output/lora"
-    synthetic_dir: str = "training/sketch_agent/output/synthetic_pairs"
-    sketchfig_cache_dir: str = "training/sketch_agent/output/sketchfig_cache"
-
-    # models
-    base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    conditioning_mode: str = "canny"  # "scribble", "canny", "lineart", or "anime_lineart"
-    canny_controlnet_model: str = "diffusers/controlnet-canny-sdxl-1.0"
-    scribble_controlnet_model: str = "xinsir/controlnet-scribble-sdxl-1.0"
-    lineart_controlnet_model: str = "TheMistoAI/MistoLine"
-    anime_lineart_controlnet_model: str = "r3gm/controlnet-lineart-anime-sdxl-fp16"
-    vae_model: str = "madebyollin/sdxl-vae-fp16-fix"
-
-    # LoRA / optimization
-    lora_rank: int = 16
-    lora_alpha: int = 16
-    lora_dropout: float = 0.0
-    learning_rate: float = 1e-4
-    lr_scheduler_type: str = "cosine"
-    lr_warmup_ratio: float = 0.1
-    mixed_precision: str = "bf16"
-
-    # training loop
-    batch_size: int = 1
-    gradient_accumulation_steps: int = 4  # real optimizer steps = max_steps / 4 = 1250
-    image_size: int = 1024
-    # max_steps counts dataloader draws (batch_size=1), not accumulated optimizer steps, so it's
-    # directly comparable to dataset size: 5000 / 1637 (1500 synthetic + 0.25*549 real) ~= 3 epochs
-    max_steps: int = 5000
-    checkpoint_interval_steps: int = 200
-    time_limit_hours: float = 7.5
-    dataloader_num_workers: int = 2
-    seed: int = 3407
-
-    # SDXL cross-attention prompt + ControlNet canny prep
-    positive_prompt = "Expert scientific figure, flat 2D vector art, TikZ style. black lines on a pure solid white background"
-    negative_prompt = "gray background, grid lines, notebook paper, textured paper, yellowed paper, shading, shadows, 3D, gradients, blurry, messy, hand-drawn, wobbly, distorted text, watermark, low contrast"
-    canny_low_threshold: int = 100
-    canny_high_threshold: int = 200
-    controlnet_conditioning_scale: float = 1.0
-    guidance_scale: float = 7.0
-    # inference-only (like negative_prompt/guidance_scale - no effect on _training_step)
-    control_guidance_start: float = 0.0
-    control_guidance_end: float = 0.7
-
-    # data sourcing
-    use_synthetic_data: bool = True
-    synthetic_samples: int = 1500
+class SketchAugmentationConfig:
+    # Offline: split between the two synthetic methods.
     ultrasketch_probability: float = 0.5
     displacement_alpha: float = 6.0
     displacement_sigma: float = 12.0
-    datikz_dataset_name: str = "nllg/DaTikZ-V4"
-    datikz_split: str = "train"
-    datikz_streaming: bool = True
-    datikz_shuffle_buffer_size: int = 10000
-    use_sketchfig: bool = True
-    sketchfig_dataset_name: str = "nllg/sketchfig"
-    sketchfig_train_fraction: float = 0.25
-    sketchfig_split_seed: int = 3407
-    eval_sample_size: int = 6
-    eval_metrics: Tuple[str, ...] = ("pixel_cc", "siglip", "dreamsim")
+    resize_multiple: int = 16
 
-    # cluster / resume
-    save_checkpoints: bool = True
-    self_resubmit: bool = True
-    sbatch_script: Optional[str] = None
+    # Offline: whether every row gets a `sketch` (True), or some rows keep none (False,
+    # restores the three-way clean/ultrasketch/displacement draw in one step).
+    # Confirm this later
+    sketch_always_populated: bool = True
 
-    # observability
-    run_name: Optional[str] = None  # TensorBoard run name; auto-generated (timestamp + job id) if unset
+    # Train-time: P(use the precomputed `sketch` column instead of `image`)
+    train_time_sketch_probability: float = 0.5
 
-    @property
-    def controlnet_model(self) -> str:
-        try:
-            return {
-                "canny": self.canny_controlnet_model,
-                "scribble": self.scribble_controlnet_model,
-                "lineart": self.lineart_controlnet_model,
-                "anime_lineart": self.anime_lineart_controlnet_model,
-            }[self.conditioning_mode]
-        except KeyError:
-            raise ValueError(
-                f"unknown conditioning_mode {self.conditioning_mode!r}, expected one of: "
-                f"canny, scribble, lineart, anime_lineart"
-            ) from None
+    # Rows to offline-process per split. None = process the whole split.
+    max_rows: Optional[int] = None
 
-    @property
-    def controlnet_variant(self) -> Optional[str]:
-        """Passed as `variant=` to ControlNetModel.from_pretrained().
-        diffusers/controlnet-canny-sdxl-1.0 ships both plain and .fp16. weight files (either works);
-        xinsir/controlnet-scribble-sdxl-1.0 ships ONLY the PLAIN file;
-        TheMistoAI/MistoLine and r3gm/controlnet-lineart-anime-sdxl-fp16 ship ONLY
-        the .fp16. file."""
-        return "fp16" if self.conditioning_mode in ("lineart", "anime_lineart") else None
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-def build_training_config(overrides: Optional[dict[str, Any]] = None) -> SketchAgentConfig:
-    config = SketchAgentConfig()
-    if overrides:
-        for key, value in overrides.items():
-            setattr(config, key, value)
-    return config
-
-
-def seed_everything(seed: int) -> None:
-    """Seeds torch's global RNG (CPU + CUDA) and nudges cuDNN toward deterministic conv
-    algorithm selection. Call once, before any model/dataset construction that consumes
-    randomness from the global RNG.
-    """
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    hf_dataset_repo: str = "loss-boss/tikz-dataset"
+    streaming: bool = True
+    shuffle_buffer_size: int = 10000
