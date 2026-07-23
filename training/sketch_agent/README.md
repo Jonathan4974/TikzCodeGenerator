@@ -34,8 +34,7 @@ extra args are appended after the hardcoded ones and win, since argparse keeps t
 value of a repeated flag).
 
 Both self-resubmit (`sbatch --dependency=afterany:$SLURM_JOB_ID <the same script>` - each
-passes `--sbatch-script "$0"` so it always resubmits *itself*, not the other one) if the 8h
-limit is hit before finishing.
+passes `--sbatch-script "$PROJECT/.../<its own filename>.sbatch"` so it always resubmits *itself*, not the other one) if the 8h limit is hit before finishing.
 
 **Interactively / not on SLURM** - the two commands the scripts above wrap:
 
