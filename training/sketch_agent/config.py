@@ -8,7 +8,7 @@ from typing import Optional
 
 @dataclass
 class SketchAugmentationConfig:
-    displacement_alpha: float = 16.0
-    displacement_sigma: float = 20.0
+    displacement_alpha: float = 6.0
+    displacement_sigma: float = 12.0
 
     max_rows: Optional[int] = None
