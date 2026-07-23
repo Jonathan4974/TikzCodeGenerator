@@ -1,14 +1,8 @@
 #!/bin/bash
-# UltraSketch-only split - a real ~50-step SDXL-scale diffusion pass per row, needs a GPU.
+# UltraSketch-only split: a real ~50-step SDXL-scale diffusion pass per row, needs a GPU.
 # Independent job from the displacement split (its own --output-dir/checkpoint), and will
 # very likely span multiple 8h windows + self-resubmits at any real row count.
 #
-# 100-row first pass confirmed good; now scaling to a 20k-row pass (checkpointed - resumes
-# from row 100, doesn't reprocess it). Full dataset: edit/remove the `--max-rows 20000` line
-# below once 20k looks good (extra args after `sbatch <script>` are appended after the
-# hardcoded ones and win, since argparse keeps the last value of a repeated flag - e.g.
-# `sbatch ... --max-rows 500000` also works without editing the script, if you'd rather not
-# touch it).
 #SBATCH --job-name="sketch_dataset_ultrasketch"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4

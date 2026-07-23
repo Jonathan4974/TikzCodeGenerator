@@ -3,12 +3,6 @@
 # touches the GPU), so it can schedule independently of, and much faster than, the
 # ultrasketch job when the GPU nodes/devcube are busy.
 #
-# 100-row first pass confirmed good; now scaling to a 20k-row pass (checkpointed - resumes
-# from row 100, doesn't reprocess it). Full dataset: edit/remove the `--max-rows 20000` line
-# below once 20k looks good (extra args after `sbatch <script>` are appended after the
-# hardcoded ones and win, since argparse keeps the last value of a repeated flag - e.g.
-# `sbatch ... --max-rows 500000` also works without editing the script, if you'd rather not
-# touch it).
 #SBATCH --job-name="sketch_dataset_displacement"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
@@ -57,7 +51,7 @@ cd "$PROJECT"
 python -m training.sketch_agent.build_sketch_dataset \
   --method displacement \
   --output-dir training/sketch_agent/output_final/sketch_dataset_displacement \
-  --max-rows 20000 \
+  --max-rows 410000 \
   --sbatch-script "$PROJECT/training/sketch_agent/build_sketch_dataset_displacement.sbatch" \
   "$@"
 
