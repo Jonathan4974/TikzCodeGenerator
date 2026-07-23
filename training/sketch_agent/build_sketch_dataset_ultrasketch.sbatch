@@ -54,7 +54,7 @@ cd "$PROJECT"
 python -m training.sketch_agent.build_sketch_dataset \
   --method ultrasketch \
   --output-dir training/sketch_agent/output_final/sketch_dataset_ultrasketch \
-  --max-rows 20000 \
+  --max-rows 25000 \
   --sbatch-script "$PROJECT/training/sketch_agent/build_sketch_dataset_ultrasketch.sbatch" \
   "$@"
 
