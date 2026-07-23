@@ -14,15 +14,39 @@ VARIANT_COLUMNS = {
 }
 
 
+def _list_parquet_files() -> list:
+    """Sorted (for reproducible row order across resumed runs) list of every `.parquet`
+    file backing `HF_REPO_ID`, as `hf://` paths `load_dataset("parquet", ...)` can stream."""
+    from huggingface_hub import HfApi
+
+    api = HfApi()
+    return sorted(
+        f"hf://datasets/{HF_REPO_ID}/{path}"
+        for path in api.list_repo_files(HF_REPO_ID, repo_type="dataset")
+        if path.endswith(".parquet")
+    )
+
+
 def load_train_split(
     streaming: bool = True,
     shuffle_seed: Optional[int] = None,
     shuffle_buffer_size: int = 10_000,
 ):
-    """Loads `loss-boss/tikz-train`'s single `train` split."""
+    """Loads `loss-boss/tikz-train`'s single `train` split.
+
+    Deliberately does NOT use `load_dataset(HF_REPO_ID, split=SPLIT_NAME)`: that enforces one
+    repo-wide "canonical" Features schema, and a real run crashed with `CastError` because
+    `datikz_v4/datikz_v4-simple_llm_description_part-00000.parquet` doesn't even have
+    `llm_description_with_text` in its schema, unlike most of the dataset's other shards - a
+    genuine upstream schema inconsistency (flagged to Jonas separately), not fixable by
+    changing what columns we ask for. Loading the same underlying parquet files directly
+    through the generic `"parquet"` builder instead makes `datasets` union each file's own
+    schema and pad whatever a given shard is missing with `None`, rather than enforcing one
+    schema and raising the moment a shard doesn't match it exactly - confirmed against the
+    real failure shape with synthetic heterogeneous-schema shards before writing this."""
     from datasets import load_dataset
 
-    ds = load_dataset(HF_REPO_ID, split=SPLIT_NAME, streaming=streaming)
+    ds = load_dataset("parquet", data_files=_list_parquet_files(), split="train", streaming=streaming)
     if streaming and shuffle_seed is not None:
         ds = ds.shuffle(seed=shuffle_seed, buffer_size=shuffle_buffer_size)
     return ds
