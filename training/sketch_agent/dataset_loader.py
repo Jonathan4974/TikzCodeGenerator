@@ -27,6 +27,24 @@ def _list_parquet_files() -> list:
     )
 
 
+def _expected_features():
+    """The 6 documented columns (see VARIANT_COLUMNS + the 2 description columns), typed
+    explicitly. Passed as `load_dataset`'s `features=` so casting doesn't depend on which
+    shard happens to be read first - see `load_train_split`'s docstring for why that matters."""
+    from datasets import Features, Image as HFImage, Value
+
+    return Features(
+        {
+            "image_with_text": HFImage(),
+            "code_with_text": Value("string"),
+            "llm_description_with_text": Value("string"),
+            "image_without_text_full": HFImage(),
+            "code_without_text_full": Value("string"),
+            "llm_description_without_text_full": Value("string"),
+        }
+    )
+
+
 def load_train_split(
     streaming: bool = True,
     shuffle_seed: Optional[int] = None,
@@ -38,15 +56,28 @@ def load_train_split(
     repo-wide "canonical" Features schema, and a real run crashed with `CastError` because
     `datikz_v4/datikz_v4-simple_llm_description_part-00000.parquet` doesn't even have
     `llm_description_with_text` in its schema, unlike most of the dataset's other shards - a
-    genuine upstream schema inconsistency (flagged to Jonas separately), not fixable by
-    changing what columns we ask for. Loading the same underlying parquet files directly
-    through the generic `"parquet"` builder instead makes `datasets` union each file's own
-    schema and pad whatever a given shard is missing with `None`, rather than enforcing one
-    schema and raising the moment a shard doesn't match it exactly - confirmed against the
-    real failure shape with synthetic heterogeneous-schema shards before writing this."""
+    genuine upstream schema inconsistency, not fixable by
+    changing what columns we ask for.
+
+    Loading the same underlying parquet files through the generic `"parquet"` builder helps,
+    but isn't enough on its own: without an explicit `features=`, `datasets` locks in
+    `info.features` from whichever shard it reads FIRST and casts every other shard against
+    THAT - so a different shard just crashes instead, depending on file order (confirmed by
+    reproducing this exact failure locally with a worst-case ordering). Passing our own fixed,
+    explicit `features=` (`_expected_features()`) makes every shard cast against the same known
+    schema regardless of read order, padding whatever a shard is missing with `None` - also
+    confirmed to preserve correct `Image()` decoding for a column even when the very first
+    shard read doesn't have that column at all (relying on `datasets`' own automatic schema
+    unification loses that column's Image-ness in exactly that case)."""
     from datasets import load_dataset
 
-    ds = load_dataset("parquet", data_files=_list_parquet_files(), split="train", streaming=streaming)
+    ds = load_dataset(
+        "parquet",
+        data_files=_list_parquet_files(),
+        split="train",
+        streaming=streaming,
+        features=_expected_features(),
+    )
     if streaming and shuffle_seed is not None:
         ds = ds.shuffle(seed=shuffle_seed, buffer_size=shuffle_buffer_size)
     return ds
