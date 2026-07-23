@@ -58,7 +58,7 @@ python -m training.sketch_agent.build_sketch_dataset \
   --method displacement \
   --output-dir training/sketch_agent/output_final/sketch_dataset_displacement \
   --max-rows 20000 \
-  --sbatch-script "$0" \
+  --sbatch-script "$PROJECT/training/sketch_agent/build_sketch_dataset_displacement.sbatch" \
   "$@"
 
 echo "Job finished."

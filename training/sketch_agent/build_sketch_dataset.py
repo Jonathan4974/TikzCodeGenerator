@@ -227,7 +227,12 @@ def _maybe_self_resubmit(sbatch_script: Optional[str], resume_args: List[str]) -
     command = _resolve_self_resubmit_command(sbatch_script, os.environ.get("SLURM_JOB_ID"), resume_args)
     if command is None:
         return None
-    subprocess.run(command, check=False)
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Self-resubmit command failed (exit {result.returncode}): {' '.join(command)}\n"
+            f"stderr: {result.stderr.strip()}"
+        )
     return " ".join(command)
 
 
