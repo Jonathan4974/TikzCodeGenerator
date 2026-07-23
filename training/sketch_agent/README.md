@@ -84,7 +84,12 @@ other than `ultrasketch`/`displacement`.
 ## Files
 
 - `config.py` - `SketchAugmentationConfig`: method params (`displacement_alpha`/`sigma`) +
-  `max_rows`.
+  `max_rows`. `displacement_alpha=8.0`/`displacement_sigma=3.0` confirmed (visually, on a
+  100-row pass) to produce a clearly visible hand-drawn wobble at our real 512x512 render
+  size - a wide `sigma` (e.g. the `data/ultrasketch_quality_test.py` reference's `alpha=6,
+  sigma=12`) pushes nearby points on the same line in the same direction, i.e. a rigid,
+  barely-visible shift rather than a tremor; a short-wavelength (low-`sigma`) field is what
+  actually reads as hand-drawn.
 - `sketch_generation.py` - `generate_synthetic_sketch(image, seed, sketch_probability, ultrasketch_probability, ...)`.
   `build_sketch_dataset.py` always calls this with `sketch_probability=1.0` (every row in a
   dedicated split is substituted) and `ultrasketch_probability` forced to `0.0`/`1.0` per the
