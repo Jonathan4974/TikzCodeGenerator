@@ -1,4 +1,6 @@
 __pycache__
-output_check/
+output_final/
 tests/
+tmp
 conftest.py
+logs
