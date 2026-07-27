@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
+DATA_DIR = ROOT / "data/data-small"
 MODELS_DIR = ROOT / "models"
 PROMPTFOO_DIR = ROOT.parent.parent / "evaluation" / "promptfoo"
 LATEX_DIR = ROOT / "latex"
@@ -51,13 +51,13 @@ class SFTConfig:
     num_examples_val: int | None = None
 
     learning_rate: float = 2e-4
-    epochs: float = 3.0
+    epochs: float = 200
     max_steps: int = -1
     save_steps: int = 100
     eval_steps: int = 100
     logging_steps: int = 1
     warmup_steps: int = 10
-    batch_size: int = 2
+    batch_size: int = 1
     gradient_accumulation_steps: int = 1
     resume_from_checkpoint: bool = False
 
