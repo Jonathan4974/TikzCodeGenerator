@@ -90,9 +90,9 @@ class Promptfoo:
 
     provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
-            label="detikzify-2-5-8b",
-            result_name="detikzify-2-5-8b",
-            ollama_model="detikzify-2-5-8b",
+            label="gemma4-31B-it-sft-normal",
+            result_name="gemma4-31B-it-sft-normal",
+            ollama_model="gemma-4-31B-it-sft-normal-q4_k_m:latest",
         ),
     )
 

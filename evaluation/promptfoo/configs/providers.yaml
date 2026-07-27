@@ -55,7 +55,7 @@
         - &ollama_think
           kind: field
           name: think
-          value: "true"
+          value: "false"
 
         - &ollama_num_predict
           kind: field
@@ -167,63 +167,23 @@
         - *ollama_thinking_multiplier
 
 - id: http
-  label: gemma4
+  label: "gemma4-31B-it-sft-normal"
   config:
-    url: "http://127.0.0.1:8000/generate"
-    method: POST
-    timeout: 900000
-
-    validateStatus: "status >= 200 && status < 300"
-
-    transformResponse: |
-      ({
-        output: json.output ?? "",
-        metadata: {
-          thinking_length: Number(json.thinking_length ?? 0)
-        }
-      })
-
+    <<: *ollama_config
     multipart:
       parts:
-        - kind: file
-          name: image
-          filename: input.png
-          contentType: image/png
-          source:
-            type: path
-            path: "{{reference_image}}"
-
-        - kind: file
-          name: llm_description
-          filename: description.txt
-          contentType: text/plain
-          source:
-            type: path
-            path: "{{llm_description}}"
-
+        - *ollama_image
+        - *ollama_description
+        - *ollama_prompt
+        - *ollama_use_description
+        - *ollama_debug
         - kind: field
-          name: prompt
-          value: "{{prompt}}"
-
-        - kind: field
-          name: use_llm_description
-          value: "false"
-
-        - kind: field
-          name: debug
-          value: "true"
-
-        - kind: field
-          name: think
-          value: "true"
-
-        - kind: field
-          name: num_predict
-          value: "8192"
-
-        - kind: field
-          name: thinking_token_multiplier
-          value: "5"
+          name: model
+          value: "gemma-4-31B-it-sft-normal-q4_k_m:latest"
+        - *ollama_think
+        - *ollama_num_predict
+        - *ollama_num_ctx
+        - *ollama_thinking_multiplier
 
 - id: http
   label: geotikzbridge-8b
