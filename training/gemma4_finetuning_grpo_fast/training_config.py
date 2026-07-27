@@ -26,7 +26,7 @@ def configure_runtime() -> None:
 
 @dataclass(slots=True)
 class SFTConfig:
-    model_name: str = str(MODELS_DIR / "gemma-4-31B-it-unsloth-bnb-4bit")
+    model_name: str = str(MODELS_DIR / "gemma-4-31B-it-unsloth-bnb-4bit") # gemma-4-31B-it
     load_in_4bit: bool = True
     enable_thinking: bool = False
     use_llm_description=USE_LLM_DESCRIPTION
@@ -42,23 +42,23 @@ class SFTConfig:
     output_dir: Path = MODELS_DIR / "sft" / "checkpoints"
     lora_output_dir: Path = MODELS_DIR / "sft" / "lora"
 
-    max_seq_length: int = 4096
+    max_seq_length: int = 4096 #9216
     image_resize: str | int = "min"
-    lora_rank: int = 4
+    lora_rank: int = 4 #16
     lora_alpha: int = 32
     seed: int = 3407
     num_examples_train: int | None = None
     num_examples_val: int | None = None
 
-    learning_rate: float = 2e-4
-    epochs: float = 200
+    learning_rate: float = 2e-4 #2e-5
+    epochs: float = 200 #5
     max_steps: int = -1
-    save_steps: int = 100
-    eval_steps: int = 100
-    logging_steps: int = 1
-    warmup_steps: int = 10
-    batch_size: int = 1
-    gradient_accumulation_steps: int = 1
+    save_steps: int = 100 #50
+    eval_steps: int = 100 #50
+    logging_steps: int = 1 
+    warmup_steps: int = 10 
+    batch_size: int = 1 #10
+    gradient_accumulation_steps: int = 1 #4
     resume_from_checkpoint: bool = False
 
 
@@ -80,10 +80,10 @@ class GRPOConfigData:
     output_dir: Path = MODELS_DIR / "grpo" / "checkpoints"
     lora_output_dir: Path = MODELS_DIR / "grpo" / "lora"
 
-    max_seq_length: int = 3072
+    max_seq_length: int = 3072 #9216
     max_prompt_length: int = 1024
-    max_completion_length: int = 2048
-    lora_rank: int = 4
+    max_completion_length: int = 2048 #8192
+    lora_rank: int = 4 #16
     lora_alpha: int = 32
     seed: int = 3407
     num_examples: int | None = None
