@@ -1,20 +1,19 @@
 #!/bin/bash
-# UltraSketch-only split: a real ~50-step SDXL-scale diffusion pass per row, needs a GPU.
-# Independent job from the displacement split (its own --output-dir/checkpoint), and will
-# very likely span multiple 8h windows + self-resubmits at any real row count.
+# One-off 500-row benchmark set (250 UltraSketch + 250 displacement) from the local
+# simple_llm_description manifest
 #
-#SBATCH --job-name="sketch_dataset_ultrasketch"
+#SBATCH --job-name="build_benchmark_dataset"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
-#SBATCH --time=0-08:00:00
+#SBATCH --time=0-01:00:00
 #SBATCH --partition=NORMAL
 #SBATCH --account=stud
 #SBATCH --qos=stud
 #SBATCH --nodelist=node4,node5,node14,node15,node16,node17,node18,node19,node20,node21
 #SBATCH --mail-type=ALL
-#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/build_sketch_dataset_ultrasketch-%j.out
+#SBATCH --output=/usr/prakt/s0031/projects/tikzcodegenerator/training/sketch_agent/logs/build_benchmark_dataset-%j.out
 
 set -euo pipefail
 
@@ -51,11 +50,9 @@ conda activate "$ENV_NAME"
 
 cd "$PROJECT"
 
-python -m training.sketch_agent.build_sketch_dataset \
-  --method ultrasketch \
-  --output-dir training/sketch_agent/output_final/sketch_dataset_ultrasketch \
-  --max-rows 100000 \
-  --sbatch-script "$PROJECT/training/sketch_agent/build_sketch_dataset_ultrasketch.sbatch" \
+python -m training.sketch_agent.build_benchmark_dataset \
+  --manifest /usr/prakt/s0031/projects/data/simple_llm_description/manifest.csv \
+  --output-dir training/sketch_agent/output_final/benchmark \
   "$@"
 
 echo "Job finished."

@@ -80,6 +80,41 @@ value, default `--method`) before pushing, if you want the pushed splits named s
 other than `ultrasketch`/`displacement`.
 
 
+## Generating the benchmark set
+
+A separate, 500-row benchmark set (250 UltraSketch + 250 displacement, 50/50
+randomly assigned) built from a separate manifest (`descriptions/`, `images/`,
+`references/`, `manifest.csv`, no with-text/without-text pairing like
+`tikz-train`). No checkpoint/resume here on purpose as the dataset is small. 
+
+
+Usage:
+
+```bash
+sbatch training/sketch_agent/build_benchmark_dataset.sbatch
+```
+
+Or:
+
+```bash
+python -m training.sketch_agent.build_benchmark_dataset \
+    --manifest /usr/prakt/sXXXX/path/to/manifest.csv \
+    --output-dir training/sketch_agent/output_final/benchmark
+```
+
+Once `output_final/benchmark/DONE` exists, push:
+
+```python
+from datasets import DatasetDict
+from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
+
+benchmark = assemble_dataset_dict(
+    "training/sketch_agent/output_final/benchmark",
+    rename={"ultrasketch": "benchmark_ultrasketch", "displacement": "benchmark_displacement"},
+)
+DatasetDict(benchmark).push_to_hub("loss-boss/tikz-train")
+```
+
 ## Files
 
 - `config.py` - `SketchAugmentationConfig`: method params (`displacement_alpha`/`sigma`) +
@@ -107,6 +142,10 @@ other than `ultrasketch`/`displacement`.
   dedicated SLURM launchers, one per method, so they run as independent jobs (displacement
   requests no GPU). `build_sketch_dataset.sbatch` (generic, `"$@"`-driven) still exists too,
   for ad hoc/other args.
+- `build_benchmark_dataset.py` / `build_benchmark_dataset.sbatch` - separate,
+  500-row benchmark-set builder (250 UltraSketch + 250 displacement) from the local
+  `simple_llm_description` manifest. Reuses `generate_synthetic_sketch`
+  from `sketch_generation.py` and `assemble_dataset_dict` from `build_sketch_dataset.py`.
 
 ## Running
 
