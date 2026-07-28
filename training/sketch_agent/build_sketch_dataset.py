@@ -279,12 +279,7 @@ def main() -> None:
 
     if finished:
         print(f"Finished: {args.output_dir}/DONE written.")
-        print(f"Shards under {args.output_dir}/shards/. Nothing was pushed: review, then push yourself, e.g.:")
-        print("  from datasets import DatasetDict")
-        print("  from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict")
-        print(f"  {split_name} = assemble_dataset_dict({args.output_dir!r})")
-        print("  # ... assemble the OTHER method's split the same way, then in ONE call:")
-        print(f"  DatasetDict({{**{split_name}, **other_split}}).push_to_hub('loss-boss/tikz-train')")
+        print(f"Shards under {args.output_dir}/shards/. Needs to be pushed to hugging face.")
     else:
         print(f"Time limit reached before finishing: checkpoint saved under {args.output_dir}/checkpoint.json.")
         if args.no_self_resubmit:

@@ -57,10 +57,8 @@ def _assign_methods(row_ids: List[str], seed: int) -> Dict[str, str]:
 
 
 def _build_features():
-    """Lazy import: keeps this module importable without `datasets` installed. Same column
-    names as build_sketch_dataset.py's training-split schema (image/code/description/
-    sketch_method) for consistency but no source_variant (this has no with-text/
-    without-text pairing)."""
+    """Lazy import: keeps this module importable without `datasets` installed. Same 5-column
+    schema (in the same order) as build_sketch_dataset.py's training splits."""
     from datasets import Features, Image as HFImage, Value
 
     return Features(
@@ -68,6 +66,7 @@ def _build_features():
             "image": HFImage(),  # the sketch
             "code": Value("string"),
             "description": Value("string"),
+            "source_variant": Value("string"),  # always null, no with-text/without-text pairing here
             "sketch_method": Value("string"),  # "ultrasketch" or "displacement"
         }
     )
@@ -113,6 +112,7 @@ def _generate_group(
                 "image": sketch,
                 "code": code,
                 "description": description,
+                "source_variant": None,
                 "sketch_method": sketch_method,
             }
         )
@@ -184,14 +184,7 @@ def main() -> None:
     )
 
     print(f"Finished: {args.output_dir}/DONE written.")
-    print(f"Shards under {args.output_dir}/shards/. Nothing was pushed: review, then push yourself, e.g.:")
-    print("  from datasets import DatasetDict")
-    print("  from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict")
-    print(
-        f"  benchmark = assemble_dataset_dict({args.output_dir!r}, rename="
-        "{'ultrasketch': 'benchmark_ultrasketch', 'displacement': 'benchmark_displacement'})"
-    )
-    print("  DatasetDict(benchmark).push_to_hub('loss-boss/tikz-train')")
+    print(f"Shards under {args.output_dir}/shards/. Needs to be pushed to hugging face.")
 
 
 if __name__ == "__main__":

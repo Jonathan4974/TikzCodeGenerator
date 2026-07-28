@@ -105,14 +105,23 @@ python -m training.sketch_agent.build_benchmark_dataset \
 Once `output_final/benchmark/DONE` exists, push:
 
 ```python
-from datasets import DatasetDict
-from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
+from datasets import load_dataset
+from huggingface_hub import HfApi, CommitOperationAdd
 
-benchmark = assemble_dataset_dict(
-    "training/sketch_agent/output_final/benchmark",
-    rename={"ultrasketch": "benchmark_ultrasketch", "displacement": "benchmark_displacement"},
+combined = load_dataset(
+    "parquet",
+    data_files="training/sketch_agent/output_final/benchmark/shards/*.parquet",
+    split="train",
 )
-DatasetDict(benchmark).push_to_hub("loss-boss/tikz-train")
+local_path = "training/sketch_agent/output_final/benchmark/benchmark-00000-of-00001.parquet"
+combined.to_parquet(local_path)
+
+HfApi().create_commit(
+    repo_id="03kiko/tikz-sketch-splits",
+    repo_type="dataset",
+    operations=[CommitOperationAdd(path_in_repo="data/benchmark-00000-of-00001.parquet", path_or_fileobj=local_path)],
+    commit_message="Add benchmark split",
+)
 ```
 
 ## Files
