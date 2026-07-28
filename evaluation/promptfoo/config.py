@@ -90,10 +90,16 @@ class Promptfoo:
 
     provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
-            label="gemma4-31B-it-tikz-sft-normal",
-            result_name="gemma4-31B-it-tikz-sft-normal",
-            ollama_model="gemma4-31B-it-tikz-sft-normal",
+            label="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
+            result_name="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
+            ollama_model="gemma4-31B-it-tikz-sft-normal-500-q4_k_m:latest",
         ),
+        ProviderRun(
+            label="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
+            result_name="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
+            ollama_model="gemma4-31B-it-tikz-sft-normal-500-q4_k_m:latest",
+        ),
+        
     )
 
     """provider_order: tuple[ProviderRun, ...] = (

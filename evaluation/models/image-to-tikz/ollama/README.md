@@ -64,3 +64,8 @@ curl http://127.0.0.1:11434/api/pull \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen3.6:35b-a3b","stream":false}'
 ```
+
+
+## add new models
+ollama create gemma4-31B-it-tikz-sft-normal-1100-q4_k_m -f Modelfile
+ollama show gemma4-31B-it-tikz-sft-normal-1100-q4_k_m
