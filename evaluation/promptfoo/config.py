@@ -8,11 +8,12 @@ ROOT = Path(__file__).resolve().parent
 
 @dataclass(frozen=True)
 class Paths:
-    data: Path = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark_merged/simple_llm_description")
+    data: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark")
     manifest: Path = data / "manifest.csv"
     images: Path = data / "images"
+    input_images: Path = data / "input_images"
     references: Path = data / "references"
-    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/our_dataset_benchmark_merged/crystalbleu_corpus")
+    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark/crystalbleu_corpus")
     results: Path = ROOT / "result"
     promptfoo_db: Path = results / "promptfoo-db"
     generated_images: Path = results / "generated_images"
@@ -88,7 +89,7 @@ class Promptfoo:
         ),
     )"""
 
-    provider_order: tuple[ProviderRun, ...] = (
+    """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
             result_name="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
@@ -100,13 +101,21 @@ class Promptfoo:
             ollama_model="gemma4-31B-it-tikz-sft-normal-500-q4_k_m:latest",
         ),
         
-    )
+    )"""
 
-    """provider_order: tuple[ProviderRun, ...] = (
+    provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="geotikzbridge-8b",
             result_name="geotikzbridge-8b",
             ollama_model="geotikzbridge-8b",
+        ),
+    )
+
+    """provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun(
+            label="detikzify-2-5-8b",
+            result_name="detikzify-2-5-8b",
+            ollama_model="detikzify-2-5-8b",
         ),
     )"""
 

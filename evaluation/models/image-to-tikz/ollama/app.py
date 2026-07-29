@@ -72,6 +72,10 @@ async def generate(
     if not image_data:
         raise HTTPException(status_code=400, detail="Image is empty")
 
+    if debug:
+        with open("image.png", "wb") as handle:
+            handle.write(image_data)
+
     try:
         description = (await llm_description.read()).decode("utf-8").strip()
     except UnicodeDecodeError as error:

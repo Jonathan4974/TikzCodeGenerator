@@ -33,5 +33,7 @@ def generate_tests(config=None):
                 row["reference_image"] = normalize_path(row["reference_image"], base, "/images", PATHS.images)
             if row.get("reference_code"):
                 row["reference_code"] = normalize_path(row["reference_code"], base, "/references", PATHS.references)
+            if row.get("input_image"):
+                row["input_image"] = normalize_path(row["input_image"], base, "/input_images", PATHS.references)
             tests.append({"vars": row})
     return tests

@@ -1,7 +1,7 @@
 description: Image-to-TikZ benchmark
 
 prompts:
-  - id: file://prompt.txt
+  - id: file://prompt_sketch.txt
     label: image-to-tikz
 
 providers: 

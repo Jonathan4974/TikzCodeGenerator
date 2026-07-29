@@ -119,6 +119,10 @@ async def detikzify(
             detail=f"Invalid image: {e}",
         )
 
+    
+    with open("/app/image.png", "wb") as handle:
+        handle.write(image_bytes)
+    
     best_fig = None
 
     try:
