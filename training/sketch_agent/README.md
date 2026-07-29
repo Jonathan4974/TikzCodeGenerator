@@ -36,8 +36,7 @@ value of a repeated flag).
 Both self-resubmit (`sbatch --dependency=afterany:$SLURM_JOB_ID <the same script>` - each
 passes `--sbatch-script "$PROJECT/.../<its own filename>.sbatch"` so it always resubmits *itself*, not the other one) if the 8h limit is hit before finishing.
 
-**Interactively / not on SLURM** - the two commands the scripts above wrap:
-
+Run **locally** if preferred:
 ```bash
 python -m training.sketch_agent.build_sketch_dataset \
     --method displacement \
@@ -50,12 +49,12 @@ python -m training.sketch_agent.build_sketch_dataset \
     --max-rows 100
 ```
 
-## Pushing both splits
+## Pushing splits
 
-Once both output dirs have `DONE` (or you're pushing a partial/first-pass run), combine and
-push in **one** `DatasetDict.push_to_hub` call - pushing splits individually, or with
-different tooling per split, is what causes the HF viewer's
-`FileFormatMismatchBetweenSplitsError`:
+**Destination: `03kiko/tikz-sketch-splits`**
+
+Once both output dirs have `DONE`, combine and
+push in **one** `DatasetDict.push_to_hub` call:
 
 ```python
 from datasets import DatasetDict
@@ -63,7 +62,7 @@ from training.sketch_agent.build_sketch_dataset import assemble_dataset_dict
 
 displacement = assemble_dataset_dict("training/sketch_agent/output_final/sketch_dataset_displacement")
 ultrasketch = assemble_dataset_dict("training/sketch_agent/output_final/sketch_dataset_ultrasketch")
-DatasetDict({**displacement, **ultrasketch}).push_to_hub("loss-boss/tikz-train")
+DatasetDict({**displacement, **ultrasketch}).push_to_hub("DESTINATION", private=False)
 ```
 
 Each new split's rows have: `image` (the sketch - this split's whole point is every row's
