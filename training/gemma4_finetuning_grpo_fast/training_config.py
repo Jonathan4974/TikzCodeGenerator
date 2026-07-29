@@ -105,7 +105,7 @@ class GRPOConfigData:
     log_examples_every: int = 1
     log_examples_max: int = 2
     max_logged_code_chars: int = 20000
-    crystalbleu_corpus_dir: Path = DATA_DIR / "crystalbleu_corpus"
+    crystalbleu_corpus_dir: Path = DATA_DIR / "crystalbleu-corpus"
     crystalbleu_k: int = 500
     crystalbleu_n: int = 4
     crystalbleu_use_cache: bool = True
