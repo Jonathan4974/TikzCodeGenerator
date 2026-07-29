@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data/data-small"
+DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
 PROMPTFOO_DIR = ROOT.parent.parent / "evaluation" / "promptfoo"
 LATEX_DIR = ROOT / "latex"
 INSTRUCTION_FILE = ROOT / "prompts" / "instruction.txt"
-USE_LLM_DESCRIPTION=True
+USE_LLM_DESCRIPTION=False
 
 def configure_runtime() -> None:
     """Expose the local Promptfoo utilities and local TeX Live installation."""
@@ -26,11 +26,11 @@ def configure_runtime() -> None:
 
 @dataclass(slots=True)
 class SFTConfig:
-    model_name: str = str(MODELS_DIR / "gemma-4-31B-it-unsloth-bnb-4bit") # gemma-4-31B-it
-    load_in_4bit: bool = True
+    model_name: str = str(MODELS_DIR / "gemma-4-31B-it")
+    load_in_4bit: bool = False
     enable_thinking: bool = False
-    use_llm_description=USE_LLM_DESCRIPTION
-
+    use_llm_description: bool = USE_LLM_DESCRIPTION
+    
     dataset_path: Path = DATA_DIR
     train_manifest: str = "manifest_train.csv"
     val_manifest: str = "manifest_val.csv"
@@ -42,36 +42,36 @@ class SFTConfig:
     output_dir: Path = MODELS_DIR / "sft" / "checkpoints"
     lora_output_dir: Path = MODELS_DIR / "sft" / "lora"
 
-    max_seq_length: int = 4096 #9216
+    max_seq_length: int = 16384
     image_resize: str | int = "min"
-    lora_rank: int = 4 #16
+    lora_rank: int = 32
     lora_alpha: int = 32
     seed: int = 3407
     num_examples_train: int | None = None
-    num_examples_val: int | None = None
+    num_examples_val: int | None = 1000
 
-    learning_rate: float = 2e-4 #2e-5
-    epochs: float = 200 #5
+    learning_rate: float = 3e-6
+    epochs: float = 1.0
     max_steps: int = -1
-    save_steps: int = 100 #50
-    eval_steps: int = 100 #50
-    logging_steps: int = 1 
-    warmup_steps: int = 10 
-    batch_size: int = 1 #10
-    gradient_accumulation_steps: int = 1 #4
+    save_steps: int = 25
+    eval_steps: int = 25
+    logging_steps: int = 1
+    warmup_steps: int = 200
+    batch_size: int = 1
+    gradient_accumulation_steps: int = 32
     resume_from_checkpoint: bool = False
 
 
 @dataclass(slots=True)
 class GRPOConfigData:
-    model_name: str = str(MODELS_DIR / "sft" / "lora")
+    model_name: str = str(MODELS_DIR / "sft/checkpoints-normal" / "checkpoint-1100")
     load_in_4bit: bool = True
     enable_thinking: bool = False
     gradient_checkpointing: bool = False
-    use_llm_description=USE_LLM_DESCRIPTION
+    use_llm_description: bool = USE_LLM_DESCRIPTION
 
     dataset_path: Path = DATA_DIR
-    manifest: str = "manifest.csv"
+    manifest: str = "manifest_val.csv"
     instruction_path: Path = INSTRUCTION_FILE
     image_column: str = "image_path"
     code_column: str = "code_path"
@@ -80,10 +80,10 @@ class GRPOConfigData:
     output_dir: Path = MODELS_DIR / "grpo" / "checkpoints"
     lora_output_dir: Path = MODELS_DIR / "grpo" / "lora"
 
-    max_seq_length: int = 3072 #9216
+    max_seq_length: int = 16384
     max_prompt_length: int = 1024
-    max_completion_length: int = 2048 #8192
-    lora_rank: int = 4 #16
+    max_completion_length: int = 8192
+    lora_rank: int = 16
     lora_alpha: int = 32
     seed: int = 3407
     num_examples: int | None = None
