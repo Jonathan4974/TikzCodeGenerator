@@ -6,10 +6,10 @@ from transformers import AutoTokenizer
 
 
 # Konfiguration
-DATA_DIR = Path("/root/projects/training/gemma4_finetuning_grpo_fast/data")
+DATA_DIR = Path("/home/jonas/Datasets/TikZ/normal")
 INPUT_MANIFEST = DATA_DIR / "manifest_train.csv"
 OUTPUT_MANIFEST = DATA_DIR / "manifest_train_max_2048.csv"
-TOKENIZER_PATH = "/root/projects/training/gemma4_finetuning_grpo_fast/models/gemma-4-31B-it"
+TOKENIZER_PATH = "/home/jonas/models/gemma-4-31B-it"
 
 MAX_TOKENS = 2048
 BATCH_SIZE = 128

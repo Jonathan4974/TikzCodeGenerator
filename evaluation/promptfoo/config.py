@@ -6,7 +6,7 @@ import sys
 ROOT = Path(__file__).resolve().parent
 
 
-@dataclass(frozen=True)
+"""@dataclass(frozen=True)
 class Paths:
     data: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark")
     manifest: Path = data / "manifest.csv"
@@ -14,6 +14,22 @@ class Paths:
     input_images: Path = data / "input_images"
     references: Path = data / "references"
     crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark/crystalbleu_corpus")
+    results: Path = ROOT / "result"
+    promptfoo_db: Path = results / "promptfoo-db"
+    generated_images: Path = results / "generated_images"
+    cache: Path = ROOT / ".cache"
+    render_cache: Path = cache / "renders"
+    model_cache: Path = cache / "models"
+    metric_cache: Path = cache / "metrics"""
+
+@dataclass(frozen=True)
+class Paths:
+    data: Path = Path("/home/jonas/Datasets/TikZ/normal")
+    manifest: Path = data / "select_hardest_base-random.csv"
+    images: Path = data / "train/images"
+    input_images: Path = data / "train/images"
+    references: Path = data / "train/references"
+    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/normal/crystalbleu-corpus")
     results: Path = ROOT / "result"
     promptfoo_db: Path = results / "promptfoo-db"
     generated_images: Path = results / "generated_images"
@@ -103,21 +119,21 @@ class Promptfoo:
         
     )"""
 
-    provider_order: tuple[ProviderRun, ...] = (
+    """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="geotikzbridge-8b",
             result_name="geotikzbridge-8b",
             ollama_model="geotikzbridge-8b",
         ),
-    )
-
-    """provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun(
-            label="detikzify-2-5-8b",
-            result_name="detikzify-2-5-8b",
-            ollama_model="detikzify-2-5-8b",
-        ),
     )"""
+
+    provider_order: tuple[ProviderRun, ...] = (
+        ProviderRun(
+            label="gemma4:31b-it-q4_K_M",
+            result_name="gemma4-31b-it-q4_K_M",
+            ollama_model="gemma4:31b-it-q4_K_M",
+        ),
+    )
 
     """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
