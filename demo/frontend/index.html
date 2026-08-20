@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TikZ Generator Demo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>TikZ Generator Demo</h1>
+
+        <div class="main-panel">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <label>Upload Image</label>
+                <input type="file" id="imageInput" accept="image/*">
+                <div class="imageBox" id="dropZone">
+                    <!-- FIX: removed inline display:none, use class="hidden" instead -->
+                    <img id="imagePreview" src="" class="hidden">
+                    <div id="dropHint" class="placeholder-text">Drop your PNG image here</div>
+                </div>
+
+                <label>Description (optional)</label>
+                <textarea id="description" placeholder="Add some extra instructions...&#10;&#10;"></textarea>
+
+                <label>Number of samples (1–8)</label>
+                <select id="sampleCount">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                </select>
+
+                <button id="generateButton">Generate TikZ</button>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- FIX: Added "Results" title -->
+                <h2 style="margin: 0 0 10px 60px;">Results</h2>
+
+                <div class="browser-container">
+                    <button id="prevBtn" class="nav-btn">◀</button>
+                    <div class="previewBox" id="previewBox">
+                        <img id="resultImage" src="" class="hidden">
+                        <div id="errorMessage" class="hidden" style="color:#d32f2f; padding:20px; text-align:center; font-weight:bold;"></div>
+                        <div id="loadingPlaceholder" class="placeholder-text" style="display:flex; align-items:center; justify-content:center; height:100%;">Waiting for generation...</div>
+                    </div>
+                    <button id="nextBtn" class="nav-btn">▶</button>
+                </div>
+                <div class="sample-counter">
+                    <span id="currentIndex">0</span> / <span id="totalSamples">0</span>
+                </div>
+
+                <div class="thumbnails-container">
+                    <h3>Successfully rendered alternative (<span id="thumbCount">0</span>)</h3>
+                    <div id="thumbnailList" style="display:flex; gap:10px; flex-wrap:wrap; min-height:80px;"></div>
+                </div>
+
+                <div class="code-display">
+                    <div class="code-header">
+                        <h3>TikZ code</h3>
+                        <button id="copyBtn">copy</button>
+                    </div>
+                    <pre id="tikzCode">Waiting for generation...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

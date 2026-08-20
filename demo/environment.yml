@@ -1,0 +1,15 @@
+name: demo
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - fastapi==0.115.0
+    - uvicorn==0.34.0
+    - python-multipart==0.0.18
+    - requests==2.32.3
+    - Pillow==10.4.0
+    - numpy==1.26.4
+    - aiofiles==24.1.0
