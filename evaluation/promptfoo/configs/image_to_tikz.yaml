@@ -7,6 +7,11 @@ prompts:
 providers: 
   - file://providers.yaml
 
+
+evaluateOptions:
+  repeat: 4
+  cache: false
+
 defaultTest:
   assert:
     - type: python
@@ -45,4 +50,43 @@ defaultTest:
     - type: python
       value: file://../assertions/tikz_thinking_length.py
       metric: thinking_length
+
+derivedMetrics:
+  - name: avg_renderable
+    value: "renderable / __count"
+
+  - name: avg_image_ssim
+    value: "image_ssim / __count"
+
+  - name: avg_image_ms_ssim
+    value: "image_ms_ssim / __count"
+
+  - name: avg_clip_similarity
+    value: "clip_similarity / __count"
+
+  - name: avg_siglip_similarity
+    value: "siglip_similarity / __count"
+
+  - name: avg_lpips_similarity
+    value: "lpips_similarity / __count"
+
+  - name: avg_dreamsim_similarity
+    value: "dreamsim_similarity / __count"
+
+  - name: avg_dists_similarity
+    value: "dists_similarity / __count"
+
+  - name: avg_crystalbleu
+    value: "crystalbleu / __count"
+
+  - name: avg_ted_similarity
+    value: "ted_similarity / __count"
+
+  - name: avg_relative_length_similarity
+    value: "relative_length_similarity / __count"
+
+  - name: avg_thinking_length
+    value: "thinking_length / __count"
+
+
 tests: file://../tests.py:generate_tests

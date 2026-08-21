@@ -5,31 +5,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parent
 
-
-"""@dataclass(frozen=True)
-class Paths:
-    data: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark")
-    manifest: Path = data / "manifest.csv"
-    images: Path = data / "images"
-    input_images: Path = data / "input_images"
-    references: Path = data / "references"
-    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/sketch/benchmark/crystalbleu_corpus")
-    results: Path = ROOT / "result"
-    promptfoo_db: Path = results / "promptfoo-db"
-    generated_images: Path = results / "generated_images"
-    cache: Path = ROOT / ".cache"
-    render_cache: Path = cache / "renders"
-    model_cache: Path = cache / "models"
-    metric_cache: Path = cache / "metrics"""
-
 @dataclass(frozen=True)
 class Paths:
-    data: Path = Path("/home/jonas/Datasets/TikZ/normal")
-    manifest: Path = data / "select_hardest_base-random.csv"
-    images: Path = data / "train/images"
-    input_images: Path = data / "train/images"
-    references: Path = data / "train/references"
-    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/normal/crystalbleu-corpus")
+    data: Path = Path("/home/jonas/Datasets/TikZ/tikz-dataset-clean-extended/sft-train/benchmark")
+    manifest: Path = data / "manifest.csv"
+    images: Path = data / "reference_image"
+    input_images: Path = data / "input_image"
+    references: Path = data / "reference_code"
+    crystalbleu_corpus: Path = Path("/home/jonas/Datasets/TikZ/tikz-dataset-clean-extended/sft-train/benchmark/crystalbleu")
     results: Path = ROOT / "result"
     promptfoo_db: Path = results / "promptfoo-db"
     generated_images: Path = results / "generated_images"
@@ -77,65 +60,8 @@ class Promptfoo:
     sequential_providers: bool = True
     unload_ollama: bool = True
     ollama_url: str = "http://127.0.0.1:11434"
-    """provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun(
-            label="qwen3-vl:8b-thinking-bf16",
-            result_name="qwen3-vl-8b-thinking-bf16",
-            ollama_model="qwen3-vl:8b-thinking-bf16",
-        ),
-        ProviderRun(
-            label="gemma4:31b-it-q4_K_M",
-            result_name="gemma4-31b-it-q4_K_M",
-            ollama_model="gemma4:31b-it-q4_K_M",
-        ),
-        ProviderRun(
-            label="gemma4:12b-it-bf16",
-            result_name="gemma4-12b-it-bf16",
-            ollama_model="gemma4:12b-it-bf16",
-        ),
-        ProviderRun(
-            label="qwen3.5:9b-bf16",
-            result_name="qwen3.5-9b-bf16",
-            ollama_model="qwen3.5:9b-bf16",
-        ),
-        ProviderRun(
-            label="qwen3.6:35b-a3b",
-            result_name="qwen3.6-35b-a3b",
-            ollama_model="qwen3.6:35b-a3b",
-        ),
-    )"""
-
-    """provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun(
-            label="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
-            result_name="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
-            ollama_model="gemma4-31B-it-tikz-sft-normal-500-q4_k_m:latest",
-        ),
-        ProviderRun(
-            label="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
-            result_name="gemma4-31B-it-tikz-sft-normal-500-q4_k_m",
-            ollama_model="gemma4-31B-it-tikz-sft-normal-500-q4_k_m:latest",
-        ),
-        
-    )"""
-
-    """provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun(
-            label="geotikzbridge-8b",
-            result_name="geotikzbridge-8b",
-            ollama_model="geotikzbridge-8b",
-        ),
-    )"""
 
     provider_order: tuple[ProviderRun, ...] = (
-        ProviderRun(
-            label="gemma4:31b-it-q4_K_M",
-            result_name="gemma4-31b-it-q4_K_M",
-            ollama_model="gemma4:31b-it-q4_K_M",
-        ),
-    )
-
-    """provider_order: tuple[ProviderRun, ...] = (
         ProviderRun(
             label="qwen3-vl:8b-instruct-bf16",
             result_name="qwen3-vl-8b-instruct-bf16",
@@ -161,7 +87,7 @@ class Promptfoo:
             result_name="qwen3.6-35b-a3b",
             ollama_model="qwen3.6:35b-a3b",
         ),
-    )"""
+    )
 
 
 @dataclass(frozen=True)
