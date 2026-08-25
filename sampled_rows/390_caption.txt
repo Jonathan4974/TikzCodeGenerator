@@ -1,0 +1,1 @@
+The \emph{RiverSwim} MDP environment with $n$ states. This environment is commonly used to evaluate exploration in RL. Solid arrows represent the swim right action ($R$); dashed arrows represent the go left action ($L$).

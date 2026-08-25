@@ -1,0 +1,1 @@
+The arc diagram for the fractal self-dual algorithm $H_{\text{FSDM}}(15)$ on $16$ nodes. Each dyadic sub-block is again self-dual.

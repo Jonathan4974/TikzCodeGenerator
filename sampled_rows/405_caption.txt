@@ -1,0 +1,1 @@
+The ADI reasoning cycle. Abduction generates conjectures (L0), Deduction verifies logical consistency (L1), and Induction validates empirically (L2). Finalized decisions become Design Rationale Records (DRRs). Evidence decay or new anomalies re-enter the cycle.

@@ -1,0 +1,1 @@
+A convex kite is a quadrilateral that has two pairs of adjacent sides that are of equal lengths. Consequently, splitting the kite along the dashed segment, one obtains two congruent triangles.

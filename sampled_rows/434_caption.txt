@@ -1,0 +1,1 @@
+The tree \(T(a_1,\ldots,a_m)\). The core is the path \(x_1-x_2-\cdots-x_m\), and \(a_i\) pendant paths of length two are attached to \(x_i\).

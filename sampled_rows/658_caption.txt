@@ -1,0 +1,1 @@
+Graph of indices for $N=8$ with two connected components $\mathcal{I}_{1}$ and $\mathcal{I}_{2}$ consisting of all subsets of size $3$ of $\{1,2,6,7\}$ and $\{3,4,5,8\}$, respectively.

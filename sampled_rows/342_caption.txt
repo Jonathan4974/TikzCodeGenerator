@@ -1,0 +1,1 @@
+Expansion phase in Example~\ref{ex:running}. Panel~(a): after JBC, the JBC cycle (solid blue) covers $i_1$, $i_4$, $i_5$; remaining students are on self-loops (dotted). Panel~(b): an augmenting path (dashed orange) reroutes through the existing matching, incorporating $i_2$, $i_3$, $i_6$. Panel~(c): after flipping, all six students are on non-trivial cycles (red).

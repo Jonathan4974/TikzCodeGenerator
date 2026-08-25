@@ -1,0 +1,1 @@
+Schematic of local-to-global correspondence in the network. Here, $e_i$ denotes the $i$th oriented edge of the graph, where $q_i$ flows in the specified direction. %\icg{To be placed where fits!}

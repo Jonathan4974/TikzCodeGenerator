@@ -1,0 +1,72 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[table]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\begin{document}
+
+\begin{tikzpicture}[yscale=0.85]
+
+% Bar parameters
+\def\bh{0.42}   % bar half-height
+\def\u{0.42}    % width per medication count
+\def\ya{2.4}    % y for 3 experts
+\def\yb{1.6}    % y for 2 experts
+\def\yc{0.8}    % y for 1 expert
+\def\yd{0}      % y for 0 experts
+
+% Row labels
+\node[anchor=east, font=\small] at (-0.15, \ya) {3 experts};
+\node[anchor=east, font=\small] at (-0.15, \yb) {2 experts};
+\node[anchor=east, font=\small] at (-0.15, \yc) {1 expert};
+\node[anchor=east, font=\small] at (-0.15, \yd) {0 experts};
+
+% 3 experts: 2 TP
+\fill[teal!55] (0, \ya-\bh/2) rectangle ({2*\u}, \ya+\bh/2);
+\node[font=\sffamily\tiny\bfseries, white] at ({1*\u}, \ya) {2};
+
+% 2 experts: 3 TP + 1 Removed
+\fill[teal!55] (0, \yb-\bh/2) rectangle ({3*\u}, \yb+\bh/2);
+\fill[gray!42] ({3*\u}, \yb-\bh/2) rectangle ({4*\u}, \yb+\bh/2);
+\node[font=\sffamily\tiny\bfseries, white] at ({1.5*\u}, \yb) {3};
+\node[font=\sffamily\tiny\bfseries, white] at ({3.5*\u}, \yb) {1};
+
+% 1 expert: 6 TP + 1 FP + 2 Removed
+\fill[teal!55] (0, \yc-\bh/2) rectangle ({6*\u}, \yc+\bh/2);
+\fill[orange!60] ({6*\u}, \yc-\bh/2) rectangle ({7*\u}, \yc+\bh/2);
+\fill[gray!42] ({7*\u}, \yc-\bh/2) rectangle ({9*\u}, \yc+\bh/2);
+\node[font=\sffamily\tiny\bfseries, white] at ({3*\u}, \yc) {6};
+\node[font=\sffamily\tiny\bfseries, white] at ({6.5*\u}, \yc) {1};
+\node[font=\sffamily\tiny\bfseries, white] at ({8*\u}, \yc) {2};
+
+% 0 experts: 4 FN
+\fill[red!38] (0, \yd-\bh/2) rectangle ({4*\u}, \yd+\bh/2);
+\node[font=\sffamily\tiny\bfseries, white] at ({2*\u}, \yd) {4};
+
+% Axis
+\draw[gray!30] (0, -0.4) -- ({9*\u}, -0.4);
+\foreach \x in {0,2,4,6,8} {
+    \node[font=\tiny, gray!50!black] at ({\x*\u}, -0.55) {\x};
+}
+\node[font=\scriptsize, gray!50!black] at ({4.5*\u}, -0.8) {Number of medications};
+
+% Legend
+\def\ly{-1.25}
+\fill[teal!55] (0, \ly-0.12) rectangle (0.3, \ly+0.12);
+\node[font=\scriptsize, anchor=west] at (0.35, \ly) {TP};
+\fill[orange!60] (1.1, \ly-0.12) rectangle (1.4, \ly+0.12);
+\node[font=\scriptsize, anchor=west] at (1.45, \ly) {FP};
+\fill[gray!42] (2.2, \ly-0.12) rectangle (2.5, \ly+0.12);
+\node[font=\scriptsize, anchor=west] at (2.55, \ly) {Removed};
+\fill[red!38] (3.7, \ly-0.12) rectangle (4.0, \ly+0.12);
+\node[font=\scriptsize, anchor=west] at (4.05, \ly) {FN};
+
+\end{tikzpicture}
+
+\end{document}
