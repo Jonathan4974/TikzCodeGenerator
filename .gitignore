@@ -1,6 +1,7 @@
 .env
 *.parquet
 sample_test_rows.py
+tmp/
 evaluation/results
 .vscode
 evaluation/logs
