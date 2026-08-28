@@ -19,7 +19,9 @@ PRAKT_DIR="/usr/prakt/$I9_USER"
 PROJECT="$PRAKT_DIR/projects/tikzcodegenerator"   # Your project root
 
 CONTAINER_DIR="$PROJECT/demo"
-LOG_DIR="$CONTAINER_DIR/logs"
+DEMO="demo_wo_descrip_gen"                              # demo folder name
+DEMO_DIR="$CONTAINER_DIR/$DEMO"
+LOG_DIR="$DEMO_DIR/logs"
 OLLAMA_MODEL_STORE="$PRAKT_DIR/projects/models/ollama_model_store"
 MODEL_STORE="$PRAKT_DIR/projects/models"
 IMAGE="$CONTAINER_DIR/ollama-server.sqsh"  # Ensure this exists
@@ -102,8 +104,8 @@ echo "   ssh -N -L ${PORT_LOCAL}:${NODE_IP}:${PORT} ${USER}@${LOGIN_NODE}"
 echo "Then open http://localhost:${PORT_LOCAL} in your browser."
 echo "======================================================"
 
-cd "$CONTAINER_DIR"
-export PYTHONPATH="$CONTAINER_DIR/backend:$PYTHONPATH"
+cd "$DEMO_DIR"
+export PYTHONPATH="$DEMO_DIR/backend:$PYTHONPATH"
 # Run uvicorn via conda
 conda run --no-capture-output -n "$CLIENT_ENV" \
   exec python -m uvicorn app:app --host 0.0.0.0 --port $PORT

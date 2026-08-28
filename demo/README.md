@@ -15,6 +15,17 @@ enroot import \
 
 ## Run demo on the cluster
 
+choose the demo you want to run:
+- To run demo without description generation:
+    ```bash
+    export DEMO="demo_wo_descrip_gen" 
+    ```
+
+- To run demo with description generation:
+    ```bash
+    export DEMO="demo_w_descrip_gen" 
+    ```
+
 change the model name and user name, then launch the demo on the cluster
 
 ```bash

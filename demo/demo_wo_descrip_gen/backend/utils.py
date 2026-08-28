@@ -3,13 +3,26 @@ from PIL import Image, ImageChops
 
 IMAGE_SIZE = 512
 
+# def render_instruction(prompt: str, description: str | None) -> str:
+#     final_prompt = prompt.strip()
+#     if description and description.strip():
+#         final_prompt += (
+#             "\n\nAdditionally, here is a description of the image "
+#             "with some creation hints:\n"
+#             f"{description.strip()}"
+#         )
+#     return final_prompt
+
 def render_instruction(prompt: str, description: str | None) -> str:
     final_prompt = prompt.strip()
     if description and description.strip():
         final_prompt += (
-            "\n\nAdditionally, here is a description of the image "
-            "with some creation hints:\n"
-            f"{description.strip()}"
+            "\n\n---\n"
+            "**Optional User Description (Auxiliary Hint):**\n"
+            f"{description.strip()}\n"
+            "---\n"
+            "**Note:** The above user description is supplementary. Use it to clarify ambiguous visual elements, "
+            "but strictly prioritize the uploaded image for all spatial, chromatic, and geometric decisions."
         )
     return final_prompt
 

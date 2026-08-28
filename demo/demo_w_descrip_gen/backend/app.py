@@ -10,10 +10,10 @@ import asyncio
 
 import config
 
-from prompt import command
+from prompt import COMMAND_TIKZ, COMMAND_DESCRIBE
 
 from ollama_client import (
-    generate_tikz,
+    ollama_generate,
     OllamaTimeoutError,
     OllamaConnectionError,
     OllamaModelError,
@@ -61,9 +61,6 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
 
     normalize_canvas(image_path)
 
-    # build prompt
-    prompt_text = render_instruction(command, description)
-
     # call ollama
     async def event_stream():
         for i in range(num_samples):
@@ -75,11 +72,24 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
             options = {"temperature": temp, "seed": 42 + i}
             
             try:
-                # asynchronously call the generation function
-                raw_tex = await asyncio.to_thread(
-                    generate_tikz,
+                # --- Step 1: Generate detailed description ---
+                prompt_desc = render_instruction(COMMAND_DESCRIBE, description)
+                detail_desc = await asyncio.to_thread(
+                    ollama_generate,
                     sketch=image_path,
-                    prompt_text=prompt_text,
+                    prompt_text=prompt_desc,
+                    options=options
+                )
+
+                if not detail_desc or not detail_desc.strip():
+                    detail_desc = description or ""
+
+                # --- Step 2: Generate TikZ code using the detailed description ---
+                prompt_tikz = render_instruction(COMMAND_TIKZ, detail_desc)
+                raw_tex = await asyncio.to_thread(
+                    ollama_generate,
+                    sketch=image_path,
+                    prompt_text=prompt_tikz,
                     options=options
                 )
                 tex = clean_code(raw_tex)
@@ -89,6 +99,7 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
 
                 result_data = {
                     "index": i,
+                    "description": detail_desc,
                     "tikz": tex,
                     "success": compile_result["success"],
                     "png": f"/outputs/result_{i}.png" if compile_result["success"] and not compile_result.get("overall_blank") else None,
@@ -98,6 +109,7 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
             except Exception as e:
                 result_data = {
                     "index": i,
+                    "description": None,
                     "tikz": None,
                     "success": False,
                     "png": None,

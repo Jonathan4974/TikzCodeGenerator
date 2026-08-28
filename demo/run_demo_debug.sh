@@ -18,6 +18,8 @@ MODEL="${MODEL:-gemma4:e2b-it-q4_K_M}"          # or phi4:latest, gemma4:9b, etc
 CONTAINER_DIR="$PROJECT/demo"
 OLLAMA_MODEL_STORE="$PRAKT_DIR/projects/models/ollama_model_store"
 IMAGE="$CONTAINER_DIR/ollama-server.sqsh"          # ensure this exists
+DEMO="${DEMO:-demo_wo_descrip_gen}"                              # demo folder name
+DEMO_DIR="$CONTAINER_DIR/$DEMO"
 
 CONDA_SH="$PRAKT_DIR/miniconda3/etc/profile.d/conda.sh"
 CLIENT_ENV="demo"                                  # your conda env name
@@ -28,7 +30,7 @@ export PYTHONUNBUFFERED=1
 
 # Create a unique identifier for this run (use PID + timestamp)
 RUN_ID="$$_$(date +%Y%m%d_%H%M%S)"
-LOG_DIR="$CONTAINER_DIR/logs_debug"
+LOG_DIR="$DEMO_DIR/logs_debug"
 mkdir -p "$LOG_DIR" "$OLLAMA_MODEL_STORE"
 
 echo "======================================================"
@@ -111,8 +113,8 @@ echo "======================================================"
 echo "Uvicorn log will appear below (Ctrl+C to stop)."
 
 # Run uvicorn (foreground)
-cd "$CONTAINER_DIR"
-export PYTHONPATH="$CONTAINER_DIR/backend:$PYTHONPATH"
+cd "$DEMO_DIR"
+export PYTHONPATH="$DEMO_DIR/backend:$PYTHONPATH"
 python -m uvicorn app:app --host 0.0.0.0 --port $PORT --log-level debug
 
 # =============================================
