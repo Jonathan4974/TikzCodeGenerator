@@ -99,9 +99,9 @@ class OllamaOutputError(OllamaError):
 # Main API
 # ============================================================
 
-def ollama_generate(sketch: str | Path, prompt_text: str, options: dict = {}):
+def generate_tikz(sketch: str | Path, prompt_text: str, options: dict = {}):
     """
-    Generate required content (tikz code or description) with Ollama.
+    Generate TikZ code with Ollama.
 
     Parameters:
         sketch: Uploaded image.

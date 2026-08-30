@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.10
   - pip
+  - poppler
   - pip:
     - fastapi==0.115.0
     - uvicorn==0.34.0

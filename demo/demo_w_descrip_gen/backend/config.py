@@ -23,8 +23,7 @@ TEMPLATE_DIR = PROJECT_ROOT / "templates"
 
 OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 
-# OLLAMA_MODEL = "gemma4:31b-it-q4_K_M"
-OLLAMA_MODEL = "gemma4:e2b-it-q4_K_M"
+OLLAMA_MODEL = os.environ.get("MODEL", "gemma4:e2b-it-q4_K_M")
 
 OLLAMA_TIMEOUT = 600
 

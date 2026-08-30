@@ -147,10 +147,13 @@ function displayBrowserResult(index) {
         currentIndexSpan.textContent = '0';
         prevBtn.disabled = true;
         nextBtn.disabled = true;
+        document.getElementById("detailDescription").classList.add("hidden");
         return;
     }
 
     const data = allResults[index];
+    console.log('data:', data);
+    console.log('description:', data.description);
     currentIndexSpan.textContent = index + 1;
     totalSamplesSpan.textContent = allResults.length;
 
@@ -160,13 +163,24 @@ function displayBrowserResult(index) {
     loadingPlaceholder.classList.add('hidden');
     loadingPlaceholder.style.display = 'none';
 
+    const descEl = document.getElementById("detailDescription");
+
     if (data.success && data.png) {
         // Show image
         resultImage.classList.remove('hidden');
         resultImage.style.display = 'block';
+        resultImage.src = data.png + '?t=' + new Date().getTime();
         errorMessage.classList.add('hidden');
         errorMessage.style.display = 'none';
-        resultImage.src = data.png + '?t=' + new Date().getTime();
+
+        if (data.description && data.description.trim()) {
+            descEl.textContent = data.description;
+            descEl.classList.remove("hidden");
+            // descEl.style.display = "block";
+        } else {
+            descEl.classList.add("hidden");
+            // descEl.style.display = "none";
+        }
     } else {
         // Show error message (full content as string)
         resultImage.classList.add('hidden');
@@ -178,6 +192,8 @@ function displayBrowserResult(index) {
         if (data.raw) {
             errorMessage.textContent += '\n\n' + data.raw;
         }
+        descEl.classList.add("hidden");
+        descEl.style.display = "none";
     }
 }
 
@@ -243,6 +259,8 @@ function resetUI() {
     currentIndexSpan.textContent = '0';
     resultImage.classList.add('hidden');
     resultImage.style.display = '';
+    document.getElementById("detailDescription").classList.add("hidden");
+    document.getElementById("detailDescription").style.display = "none";
     errorMessage.classList.add('hidden');
     errorMessage.style.display = '';
     loadingPlaceholder.classList.remove('hidden');

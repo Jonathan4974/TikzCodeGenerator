@@ -18,35 +18,27 @@ const dropZone = document.getElementById('dropZone');
 const dropHint = document.getElementById('dropHint');
 
 // State
-let allResults = [];          // Array of result objects
-let currentBrowserIndex = -1; // Index in allResults currently shown
-let selectedThumbIndex = -1;  // Index in allResults of the selected thumbnail
+let allResults = [];
+let currentBrowserIndex = -1;
+let selectedThumbIndex = -1;
 
-// ===== Utility: prevent default behavior =====
+// ===== Utility =====
 function preventDefaults(e) {
     e.preventDefault();
     e.stopPropagation();
 }
 
-// ===== 1. Fix drag-and-drop: prevent globally on document =====
+// ===== FIX 1: Global drag prevention =====
 document.addEventListener('dragover', preventDefaults, false);
 document.addEventListener('drop', preventDefaults, false);
 
-// ===== dropZone drag events =====
+// ===== Drop zone events =====
 ['dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropZone.addEventListener(eventName, preventDefaults, false);
 });
 
-// Highlight drop zone on dragover
-dropZone.addEventListener('dragover', () => {
-    dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-});
-
-// Handle drop
+dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', handleDrop);
 
 function handleDrop(e) {
@@ -62,64 +54,77 @@ function handleDrop(e) {
             alert('Please drop an image file.');
             return;
         }
-        // Update the files property of the file input
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
         imageInput.files = dataTransfer.files;
-        // Manually trigger change event for preview
         imageInput.dispatchEvent(new Event('change'));
     }
 }
 
-// ===== 2. Fix image preview: use classList to toggle visibility =====
+// ===== FIX 2: Image preview – force removal of inline display styles =====
 imageInput.addEventListener('change', () => {
     if (imageInput.files.length === 0) {
+        // Hide preview, show hint
         imagePreview.classList.add('hidden');
+        imagePreview.style.display = '';       // clear inline
         dropHint.classList.remove('hidden');
+        dropHint.style.display = '';          // clear inline
         imagePreview.src = '';
         return;
     }
     const file = imageInput.files[0];
-    // Use FileReader as fallback, more reliable
     try {
         const url = URL.createObjectURL(file);
         imagePreview.src = url;
+        // Force display block and remove hidden class
+        imagePreview.style.display = 'block';
+        imagePreview.classList.remove('hidden');
+        dropHint.classList.add('hidden');
+        dropHint.style.display = 'none';
+        // Also handle loading errors
         imagePreview.onload = () => {
+            imagePreview.style.display = 'block';
             imagePreview.classList.remove('hidden');
             dropHint.classList.add('hidden');
+            dropHint.style.display = 'none';
         };
         imagePreview.onerror = () => {
-            // If createObjectURL fails, try FileReader
+            // Fallback to FileReader
             const reader = new FileReader();
             reader.onload = (e) => {
                 imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
                 imagePreview.classList.remove('hidden');
                 dropHint.classList.add('hidden');
+                dropHint.style.display = 'none';
             };
             reader.readAsDataURL(file);
         };
-        // If image is cached, onload may not fire, so show directly
-        // Safety: delayed display
+        // Safety timeout in case onload never fires (cached image)
         setTimeout(() => {
             if (imagePreview.src && imagePreview.src !== '') {
+                imagePreview.style.display = 'block';
                 imagePreview.classList.remove('hidden');
                 dropHint.classList.add('hidden');
+                dropHint.style.display = 'none';
             }
-        }, 100);
+        }, 200);
     } catch (err) {
         console.error('Preview failed:', err);
-        // Fallback to FileReader
+        // FileReader fallback
         const reader = new FileReader();
         reader.onload = (e) => {
             imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
             imagePreview.classList.remove('hidden');
             dropHint.classList.add('hidden');
+            dropHint.style.display = 'none';
         };
         reader.readAsDataURL(file);
     }
 });
 
-// ===== Update navigation buttons =====
+// ===== Navigation buttons =====
 function updateNavButtons(index) {
     if (allResults.length === 0) {
         prevBtn.disabled = true;
@@ -130,12 +135,15 @@ function updateNavButtons(index) {
     nextBtn.disabled = (index >= allResults.length - 1);
 }
 
-// ===== Display the result in the browser =====
+// ===== FIX 3: Display result – always show either image or error =====
 function displayBrowserResult(index) {
     if (index < 0 || index >= allResults.length) {
         resultImage.classList.add('hidden');
+        resultImage.style.display = '';
         errorMessage.classList.add('hidden');
+        errorMessage.style.display = '';
         loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.style.display = 'flex';
         currentIndexSpan.textContent = '0';
         prevBtn.disabled = true;
         nextBtn.disabled = true;
@@ -148,17 +156,28 @@ function displayBrowserResult(index) {
 
     updateNavButtons(index);
 
+    // Hide loading
     loadingPlaceholder.classList.add('hidden');
+    loadingPlaceholder.style.display = 'none';
 
     if (data.success && data.png) {
+        // Show image
         resultImage.classList.remove('hidden');
+        resultImage.style.display = 'block';
         errorMessage.classList.add('hidden');
-        // Add timestamp to prevent caching
+        errorMessage.style.display = 'none';
         resultImage.src = data.png + '?t=' + new Date().getTime();
     } else {
+        // Show error message (full content as string)
         resultImage.classList.add('hidden');
+        resultImage.style.display = 'none';
         errorMessage.classList.remove('hidden');
+        errorMessage.style.display = 'block';
+        // FIX: display full error details (including any extra info)
         errorMessage.textContent = data.error || 'Generation or compilation failed.';
+        if (data.raw) {
+            errorMessage.textContent += '\n\n' + data.raw;
+        }
     }
 }
 
@@ -174,7 +193,7 @@ function addThumbnail(index, pngUrl) {
     img.loading = 'lazy';
     item.appendChild(img);
 
-    // ===== 6. Thumbnail click sync: update large preview + code =====
+    // Click sync: update main preview and code
     item.addEventListener('click', () => {
         document.querySelectorAll('.thumbnail-item').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
@@ -184,42 +203,36 @@ function addThumbnail(index, pngUrl) {
         displayBrowserResult(index);
 
         const result = allResults[index];
-        if (result && result.tikz) {
-            tikzCode.textContent = result.tikz;
-        } else {
-            tikzCode.textContent = 'No TikZ code available.';
-        }
+        tikzCode.textContent = (result && result.tikz) ? result.tikz : 'No TikZ code available.';
     });
 
     thumbnailList.appendChild(item);
     thumbCountSpan.textContent = thumbnailList.children.length;
 }
 
-// ===== Handle each result from SSE stream =====
+// ===== Handle SSE result =====
 function handleResult(data) {
     const idx = allResults.length;
     allResults.push(data);
 
     totalSamplesSpan.textContent = allResults.length;
 
-    // If first result, display it
+    // Auto-display first result
     if (allResults.length === 1) {
         currentBrowserIndex = 0;
         displayBrowserResult(0);
     }
 
-    // If successful and has png, add thumbnail
     if (data.success && data.png) {
         addThumbnail(idx, data.png);
     }
 
-    // Update nav buttons state
     if (currentBrowserIndex !== -1) {
         updateNavButtons(currentBrowserIndex);
     }
 }
 
-// ===== Reset all UI state =====
+// ===== Reset UI =====
 function resetUI() {
     allResults = [];
     currentBrowserIndex = -1;
@@ -229,15 +242,18 @@ function resetUI() {
     totalSamplesSpan.textContent = '0';
     currentIndexSpan.textContent = '0';
     resultImage.classList.add('hidden');
+    resultImage.style.display = '';
     errorMessage.classList.add('hidden');
+    errorMessage.style.display = '';
     loadingPlaceholder.classList.remove('hidden');
+    loadingPlaceholder.style.display = 'flex';
     loadingPlaceholder.textContent = 'Waiting for generation...';
     tikzCode.textContent = 'Waiting for generation...';
     prevBtn.disabled = true;
     nextBtn.disabled = true;
 }
 
-// ===== Generate button click handler =====
+// ===== Generate =====
 generateButton.addEventListener('click', async () => {
     if (imageInput.files.length === 0) {
         alert('Please upload an image first.');
@@ -285,37 +301,35 @@ generateButton.addEventListener('click', async () => {
                         console.error('Failed to parse JSON:', dataStr, e);
                     }
                 } else if (line.startsWith('event: done')) {
-                    // Generation finished
+                    // done
                 }
             }
         }
 
-        // ===== After stream ends =====
+        // After stream ends
         if (allResults.length === 0) {
             loadingPlaceholder.classList.remove('hidden');
+            loadingPlaceholder.style.display = 'flex';
             loadingPlaceholder.textContent = 'No results returned.';
             prevBtn.disabled = true;
             nextBtn.disabled = true;
         } else {
-            // Ensure browser index is valid
+            // Ensure first result is shown if not already
             if (currentBrowserIndex === -1) {
                 currentBrowserIndex = 0;
                 displayBrowserResult(0);
             } else {
-                // Refresh current display
                 displayBrowserResult(currentBrowserIndex);
             }
-
-            // ===== 4. Force refresh button states =====
             updateNavButtons(currentBrowserIndex);
 
-            // Auto-select first thumbnail
+            // Auto-select first thumbnail if exists
             const firstThumb = thumbnailList.querySelector('.thumbnail-item');
             if (firstThumb) {
                 firstThumb.click();
             } else {
-                // No successful results, show first error
-                if (allResults.length > 0) {
+                // No successful thumbnails, but at least show first error
+                if (allResults.length > 0 && currentBrowserIndex === -1) {
                     currentBrowserIndex = 0;
                     displayBrowserResult(0);
                 }
@@ -326,6 +340,7 @@ generateButton.addEventListener('click', async () => {
         alert('Error: ' + err.message);
         resetUI();
         loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.style.display = 'flex';
         loadingPlaceholder.textContent = 'An error occurred. Please try again.';
         prevBtn.disabled = true;
         nextBtn.disabled = true;
@@ -335,7 +350,7 @@ generateButton.addEventListener('click', async () => {
     }
 });
 
-// ===== Navigation button events =====
+// ===== Navigation =====
 prevBtn.addEventListener('click', () => {
     if (currentBrowserIndex > 0) {
         currentBrowserIndex--;
@@ -351,11 +366,8 @@ prevBtn.addEventListener('click', () => {
                 el.classList.remove('selected');
             }
         });
-        // Sync code display
         const result = allResults[currentBrowserIndex];
-        if (result && result.tikz) {
-            tikzCode.textContent = result.tikz;
-        }
+        tikzCode.textContent = (result && result.tikz) ? result.tikz : 'No TikZ code available.';
     }
 });
 
@@ -363,7 +375,6 @@ nextBtn.addEventListener('click', () => {
     if (currentBrowserIndex < allResults.length - 1) {
         currentBrowserIndex++;
         displayBrowserResult(currentBrowserIndex);
-        // Sync thumbnail highlight
         const items = thumbnailList.querySelectorAll('.thumbnail-item');
         items.forEach((el, idx) => {
             const dataIdx = parseInt(el.dataset.index);
@@ -374,15 +385,12 @@ nextBtn.addEventListener('click', () => {
                 el.classList.remove('selected');
             }
         });
-        // Sync code display
         const result = allResults[currentBrowserIndex];
-        if (result && result.tikz) {
-            tikzCode.textContent = result.tikz;
-        }
+        tikzCode.textContent = (result && result.tikz) ? result.tikz : 'No TikZ code available.';
     }
 });
 
-// ===== Copy button =====
+// ===== Copy =====
 copyBtn.addEventListener('click', () => {
     const code = tikzCode.textContent;
     if (code && code !== 'Waiting for generation...' && code !== 'No TikZ code available.') {

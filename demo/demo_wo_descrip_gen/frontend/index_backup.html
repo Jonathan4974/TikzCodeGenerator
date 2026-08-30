@@ -17,12 +17,13 @@
                 <label>Upload Image</label>
                 <input type="file" id="imageInput" accept="image/*">
                 <div class="imageBox" id="dropZone">
-                    <img id="imagePreview" src="" style="display:none;">
-                    <div id="dropHint">Drop your PNG image here</div>
+                    <!-- FIX: removed inline display:none, use class="hidden" instead -->
+                    <img id="imagePreview" src="" class="hidden">
+                    <div id="dropHint" class="placeholder-text">Drop your PNG image here</div>
                 </div>
 
                 <label>Description (optional)</label>
-                <textarea id="description" placeholder="Add some extra instructions..."></textarea>
+                <textarea id="description" placeholder="Add some extra instructions...&#10;&#10;"></textarea>
 
                 <label>Number of samples (1–8)</label>
                 <select id="sampleCount">
@@ -41,12 +42,15 @@
 
             <!-- Right Panel -->
             <div class="right-panel">
+                <!-- FIX: Added "Results" title -->
+                <h2 style="margin: 0 0 10px 60px;">Results</h2>
+
                 <div class="browser-container">
                     <button id="prevBtn" class="nav-btn">◀</button>
                     <div class="previewBox" id="previewBox">
-                        <img id="resultImage" src="" style="display:none;">
-                        <div id="errorMessage" style="display:none; color:#d32f2f; padding:20px; text-align:center; font-weight:bold;"></div>
-                        <div id="loadingPlaceholder" style="display:flex; align-items:center; justify-content:center; height:100%; color:#888; font-size:1.2em;">Waiting for generation...</div>
+                        <img id="resultImage" src="" class="hidden">
+                        <div id="errorMessage" class="hidden" style="color:#d32f2f; padding:20px; text-align:center; font-weight:bold;"></div>
+                        <div id="loadingPlaceholder" class="placeholder-text" style="display:flex; align-items:center; justify-content:center; height:100%;">Waiting for generation...</div>
                     </div>
                     <button id="nextBtn" class="nav-btn">▶</button>
                 </div>

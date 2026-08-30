@@ -29,7 +29,7 @@ choose the demo you want to run:
 change the model name and user name, then launch the demo on the cluster
 
 ```bash
-export MODEL=gemma4:31b-it-q4_K_M
+export MODEL=gemma4-tikz-rl-checkpoint-150:latest
 export I9_USER=s0042
 
 sbatch run_demo.sbatch
@@ -53,7 +53,7 @@ sbatch run_demo.sbatch
 you can also test the demo with a small model on the workstation before submit
 - run demo on the workstation
      ```bash
-    export MODEL=gemma4:31b-it-q4_K_M
+    export MODEL=gemma4-tikz-rl-checkpoint-150:latest
     export I9_USER=s0042
 
     bash ./run_demo_debug.sh

@@ -64,7 +64,7 @@ textarea {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-/* general character style */
+/* ===== Unified placeholder style ===== */
 .placeholder-text,
 #dropHint,
 #loadingPlaceholder,
@@ -72,15 +72,17 @@ textarea::placeholder {
     color: #888;
     font-size: 1.2em;
     font-family: Arial, Helvetica, sans-serif;
-    text-align: center;
+    text-align: center;    /* FIX: ensures description placeholder is centered */
     user-select: none;
     pointer-events: none;
 }
 
+/* FIX: specifically for textarea placeholder (override default) */
 textarea::placeholder {
     font-size: 1.2em;
     color: #888;
     opacity: 1;
+    text-align: center;   /* explicit centering */
 }
 
 #loadingPlaceholder {
@@ -97,7 +99,7 @@ textarea::placeholder {
     color: #888;
     font-size: 1.2em;
 }
-/* ===== character style setting end ===== */
+/* ===== End unified placeholder style ===== */
 
 select {
     padding: 8px 12px;
@@ -209,13 +211,13 @@ button:disabled {
     min-height: 80px;
 }
 
-/* ===== size of preview ===== */
+/* FIX: thumbnail size preservation */
 .thumbnail-item {
-    width: 512px;
-    height: 512px;
+    width: 424px;
+    height: 424px;
     min-width: 120px;
     min-height: 120px;
-    flex-shrink: 0; 
+    flex-shrink: 0;
     border: 2px solid #ccc;
     border-radius: 6px;
     overflow: hidden;
@@ -241,7 +243,6 @@ button:disabled {
     object-fit: contain;
     display: block;
 }
-/* ===== 缩略图修复结束 ===== */
 
 .code-display {
     background: #1e1e1e;
@@ -310,6 +311,7 @@ button:disabled {
     background-color: #e3f2fd;
 }
 
+/* Utility hidden class – overrides most display settings */
 .hidden {
     display: none !important;
 }

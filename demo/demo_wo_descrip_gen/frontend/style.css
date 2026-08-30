@@ -183,6 +183,31 @@ button:disabled {
     display: block;
 }
 
+.description-overlay {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    max-height: 100px;
+    overflow-y: auto;
+    z-index: 5;
+    pointer-events: none;
+    text-align: left;
+    line-height: 1.4;
+}
+.description-overlay::-webkit-scrollbar {
+    width: 4px;
+}
+.description-overlay::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+}
+
 .sample-counter {
     text-align: center;
     font-size: 0.95em;

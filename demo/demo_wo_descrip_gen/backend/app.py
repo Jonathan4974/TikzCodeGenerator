@@ -13,7 +13,7 @@ import config
 from prompt import COMMAND_TIKZ
 
 from ollama_client import (
-    generate_tikz,
+    ollama_generate,
     OllamaTimeoutError,
     OllamaConnectionError,
     OllamaModelError,
@@ -35,7 +35,7 @@ from utils import(
 
 config.apply_environment()
 
-BASE_DIR = Path(__file__).resolve().parent.parent   # backend 的父目录（项目根）
+BASE_DIR = Path(__file__).resolve().parent.parent 
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 app = FastAPI(title="TikZ Generator Demo")
@@ -77,7 +77,7 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
             try:
                 # asynchronously call the generation function
                 raw_tex = await asyncio.to_thread(
-                    generate_tikz,
+                    ollama_generate,
                     sketch=image_path,
                     prompt_text=prompt_text,
                     options=options
@@ -89,6 +89,7 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
 
                 result_data = {
                     "index": i,
+                    "description": None,
                     "tikz": tex,
                     "success": compile_result["success"],
                     "png": f"/outputs/result_{i}.png" if compile_result["success"] and not compile_result.get("overall_blank") else None,
@@ -98,6 +99,7 @@ async def generate(image: UploadFile = File(...), description: str = Form(""), n
             except Exception as e:
                 result_data = {
                     "index": i,
+                    "description": None,
                     "tikz": None,
                     "success": False,
                     "png": None,
